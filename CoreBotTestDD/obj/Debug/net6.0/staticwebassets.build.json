@@ -1,0 +1,39 @@
+{
+  "Version": 1,
+  "Hash": "951GAs68bKtiR1wdJTHLfQLcp6iw5VG9hK7vfmyjHsw=",
+  "Source": "CoreBotTestDD",
+  "BasePath": "_content/CoreBotTestDD",
+  "Mode": "Default",
+  "ManifestType": "Build",
+  "ReferencedProjectsConfiguration": [],
+  "DiscoveryPatterns": [
+    {
+      "Name": "CoreBotTestDD\\wwwroot",
+      "Source": "CoreBotTestDD",
+      "ContentRoot": "E:\\Projects\\BotTestDonDoctor\\CoreBotTestDD\\CoreBotTestDD\\wwwroot\\",
+      "BasePath": "_content/CoreBotTestDD",
+      "Pattern": "**"
+    }
+  ],
+  "Assets": [
+    {
+      "Identity": "E:\\Projects\\BotTestDonDoctor\\CoreBotTestDD\\CoreBotTestDD\\wwwroot\\default.htm",
+      "SourceId": "CoreBotTestDD",
+      "SourceType": "Discovered",
+      "ContentRoot": "E:\\Projects\\BotTestDonDoctor\\CoreBotTestDD\\CoreBotTestDD\\wwwroot\\",
+      "BasePath": "_content/CoreBotTestDD",
+      "RelativePath": "default.htm",
+      "AssetKind": "All",
+      "AssetMode": "All",
+      "AssetRole": "Primary",
+      "AssetMergeBehavior": "PreferTarget",
+      "AssetMergeSource": "",
+      "RelatedAsset": "",
+      "AssetTraitName": "",
+      "AssetTraitValue": "",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "wwwroot\\default.htm"
+    }
+  ]
+}
