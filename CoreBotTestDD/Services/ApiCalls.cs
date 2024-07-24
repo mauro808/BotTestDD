@@ -51,7 +51,7 @@ namespace CoreBotTestDD.Services
 
         }
 
-        public async Task<string> GetUserByIdAsync(string DocumentType, string DocumentId)
+        public async Task<JObject> GetUserByIdAsync(string DocumentType, string DocumentId)
         {
             string url = "https://api-users-test-001.azurewebsites.net/User?documentTypeId=" + DocumentType + "&documentNumber=" + DocumentId + "&includeAttributes=false";
             using (HttpClient client = new HttpClient())
@@ -68,10 +68,7 @@ namespace CoreBotTestDD.Services
                             return null;
                         }
                         string respuesta = await response.Content.ReadAsStringAsync();
-                        JObject obj = JObject.Parse(respuesta);
-                        string name = (string)obj["name"];
-
-                        return name;
+                        return JsonConvert.DeserializeObject<JObject>(respuesta);
                     }
                     else
                     {
@@ -308,10 +305,32 @@ namespace CoreBotTestDD.Services
 
         }
 
-        public async Task<List<JObject>> PostCreateCitaAsync(UserProfileModel userProfile, object data)
+        public async Task<bool> PostCreateCitaAsync(UserProfileModel userProfile, object data)
         {
-            var url = "https://api.ejemplo.com/endpoint";
+            var url = "https://api-appointments-test-001.azurewebsites.net/Appointments";
+            string dateTimeString = (string)data.GetType().GetProperty("DateTime").GetValue(data);
+            DateTime dateTime = DateTime.Parse(dateTimeString);
+            DateTime newDateTime = dateTime;
+            var appointmentTypeIdProp = data.GetType().GetProperty("AppointmentTypeId");
+            var userIdProp = data.GetType().GetProperty("UserId");
+            var officeIdProp = data.GetType().GetProperty("OfficeId");
+            string appointmentTypeIdStr = appointmentTypeIdProp?.GetValue(data) as string;
+            string userIdStr = userIdProp?.GetValue(data) as string;
+            string officeIdStr = officeIdProp?.GetValue(data) as string;
+            if (!int.TryParse(appointmentTypeIdStr, out int appointmentTypeId))
+            {
+                throw new ArgumentException("AppointmentTypeId no es un entero válido.");
+            }
 
+            if (!int.TryParse(userIdStr, out int userId))
+            {
+                throw new ArgumentException("UserId no es un entero válido.");
+            }
+
+            if (!int.TryParse(officeIdStr, out int officeId))
+            {
+                throw new ArgumentException("OfficeID no es un entero válido.");
+            }
             using (HttpClient client = new HttpClient())
             {
                 try
@@ -319,42 +338,114 @@ namespace CoreBotTestDD.Services
                     client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", await AutenticationAsync());
                     var parametros = new
                     {
-                        AppointmentTypeID = "valor1",
-                        UserID = "valor2",
-                        InsuranceID = "",
-                        DoctorID = "",
-                        ServiceID = "",
-                        DateFrom = "",
-                        To = "",
-                        State = "",
-                        InsurancePlanID = "",
-                        OfficeID = "",
-                        Telemedicine = "",
-                        SpecialtyID = "",
-                        Origin = "",
-                        // Agrega más parámetros según sea necesario
+                        AppointmentTypeID = appointmentTypeId,
+                        UserID = int.Parse(userProfile.UserId),
+                        InsuranceID = int.Parse(userProfile.Aseguradora),
+                        DoctorID = userId,
+                        ServiceID = int.Parse(userProfile.Servicios),
+                        DateFrom = dateTime,
+                        To = newDateTime.ToString("HH:mm:ss tt"),
+                        State = "P",
+                        Message = "",
+                        InsurancePlanID = int.Parse(userProfile.PlanAseguradora),
+                        OfficeID = officeId,
+                        Telemedicine = false,
+                        SpecialtyID = int.Parse(userProfile.especialidad),
+                        Origin = 3,
                     };
-                    HttpResponseMessage response = await client.GetAsync(url);
+                    var jsonContent = JsonConvert.SerializeObject(parametros);
+                    var httpContent = new StringContent(jsonContent, Encoding.UTF8, "application/json");
+                    HttpResponseMessage response = await client.PostAsync(url, httpContent);
 
                     if (response.IsSuccessStatusCode)
                     {
                         if (response.StatusCode.Equals("204"))
                         {
-                            return null;
+                            return false;
                         }
                         string jsonResponse = await response.Content.ReadAsStringAsync();
-                        return JsonConvert.DeserializeObject<List<JObject>>(jsonResponse);
+                        bool responseRef = await PostRefreshCitaAsync(JObject.Parse(jsonResponse));
+                        if(responseRef == true)
+                        {
+                            return true;
+                        }
+                        else
+                        {
+                            return false;
+                        }
                     }
                     else
                     {
                         Console.WriteLine($"Error: {response.StatusCode}");
-                        return null;
+                        return false;
                     }
                 }
                 catch (Exception ex)
                 {
                     Console.WriteLine($"Excepción: {ex.Message}");
-                    return null;
+                    return false;
+                }
+            }
+
+        }
+
+        public async Task<bool> PostRefreshCitaAsync(JObject obj)
+        {
+            var url = "https://api-appointments-test-001.azurewebsites.net/Appointments";
+            bool ResultRef = false;
+            string AppointmentId = obj["appointmentID"]?.ToString();
+            var RemoteId = obj["remoteID"]?.ToString();
+            string userIdStr = obj["userID"]?.ToString();
+            bool isValid = int.TryParse(userIdStr, out int userId);
+            var origin = obj["origin"]?.ToString();
+            bool StatisticsIgnore = bool.TryParse(obj["statisticsIgnore"].ToString(), out bool result) ? result : false;
+            if (!int.TryParse(AppointmentId, out int appointmentId))
+            {
+                throw new ArgumentException("AppointmentTypeId no es un entero válido.");
+            }
+
+            if (!int.TryParse(origin, out int originIn))
+            {
+                throw new ArgumentException("UserId no es un entero válido.");
+            }
+            using (HttpClient client = new HttpClient())
+            {
+                try
+                {
+                    client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", await AutenticationAsync());
+                    var parametros = new Dictionary<string, object>
+                    {
+                       { "AppointmentID", appointmentId },
+                       { "RemoteID", null},
+                        { "Origin", originIn },
+                        { "StatisticsIgnore", StatisticsIgnore },
+                        { "State", "A" },
+                        { "Confirmed", true },
+                        { "UserID", userId}
+                       
+                    };              
+                    var jsonContent = JsonConvert.SerializeObject(parametros);
+                    var httpContent = new StringContent(jsonContent, Encoding.UTF8, "application/json");
+                    HttpResponseMessage response = await client.PutAsync(url, httpContent);
+
+                    if (response.IsSuccessStatusCode)
+                    {
+                        if (response.StatusCode.Equals("204"))
+                        {
+                            return false;
+                        }
+                        return true; ;
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Error: {response.StatusCode}");
+                        return ResultRef;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Excepción: {ex.Message}");
+                    return false ;
                 }
             }
 

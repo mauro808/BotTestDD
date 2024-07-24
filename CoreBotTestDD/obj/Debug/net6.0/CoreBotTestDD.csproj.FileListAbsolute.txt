@@ -83,3 +83,4 @@ E:\Projects\BotTestDonDoctor\CoreBotTestDD\CoreBotTestDD\bin\Debug\net6.0\Azure.
 E:\Projects\BotTestDonDoctor\CoreBotTestDD\CoreBotTestDD\bin\Debug\net6.0\Azure.Core.dll
 E:\Projects\BotTestDonDoctor\CoreBotTestDD\CoreBotTestDD\bin\Debug\net6.0\Microsoft.Bcl.AsyncInterfaces.dll
 E:\Projects\BotTestDonDoctor\CoreBotTestDD\CoreBotTestDD\bin\Debug\net6.0\System.Memory.Data.dll
+E:\Projects\BotTestDonDoctor\CoreBotTestDD\CoreBotTestDD\obj\Debug\net6.0\CoreBotTestDD.sourcelink.json
