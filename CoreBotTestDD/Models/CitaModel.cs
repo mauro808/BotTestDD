@@ -4,17 +4,21 @@ namespace CoreBotTestDD.Models
 {
     public class CitaModel
     {
-        public string appointmentTypeID { get; set; }
+        public string DocumentType { get; set; }
 
-        public int userID { get; set; }
+        public string Gender { get; set; }
 
-        public int DoctorID { get; set; }
+        public string MaritalState { get; set; }
 
-        public int dateTime { get; set; }
+        public string Insurance { get; set; }
 
-        public int officeID { get; set; }  
+        public string InsurancePlan { get; set; }
 
-        public int duration { get; set; }
+        public string AfiliationType { get; set; }
+
+        public string PatientType { get; set; }
+
+        public string City { get; set; }
 
     }
 }

@@ -1,8 +1,13 @@
 ﻿// Generated with Bot Builder V4 SDK Template for Visual Studio CoreBot v4.22.0
 
+using Azure;
+using CoreBotTestDD.Models;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Bot.Builder;
 using Microsoft.Bot.Builder.Integration.AspNet.Core;
+using Newtonsoft.Json;
+using System;
 using System.Threading.Tasks;
 
 namespace CoreBotTestDD.Controllers
@@ -27,9 +32,20 @@ namespace CoreBotTestDD.Controllers
         [HttpGet]
         public async Task PostAsync()
         {
-            // Delegate the processing of the HTTP POST to the adapter.
-            // The adapter will invoke the bot.
-            await _adapter.ProcessAsync(Request, Response, _bot);
+            try
+            {
+                // Delegate the processing of the HTTP POST to the adapter.
+                // The adapter will invoke the bot.
+                await _adapter.ProcessAsync(Request, Response, _bot);
+            }
+            catch (Exception ex)
+            {
+                // Log the exception
+                Console.WriteLine($"Error processing request: {ex.Message}");
+                // Optionally, you can return a custom error message
+                Response.StatusCode = 500;
+                await Response.WriteAsync("Internal Server Error");
+            }
         }
     }
 }

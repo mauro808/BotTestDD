@@ -16,6 +16,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 using Azure;
+using CoreBotTestDD.Bots;
+using Microsoft.Bot.Builder.Dialogs.Prompts;
+using DonBot.Dialogs;
 
 namespace CoreBotTestDD.Dialogs
 {
@@ -24,22 +27,26 @@ namespace CoreBotTestDD.Dialogs
         private readonly UserState _userState;
         private readonly ApiCalls _apiCalls;
         private readonly ConversationState _conversationState;
+        private readonly RegisterDialog _registerDialog;
         private readonly ILogger _logger;
         private readonly IStatePropertyAccessor<DialogState> _dialogStateAccessor;
         private readonly IStatePropertyAccessor<UserProfileModel> _userStateAccessor;
 
-        public AgendarDialog(ILogger<MainDialog> logger, UserState userState, ConversationState conversationState, ApiCalls apiCalls)
+        public AgendarDialog(ILogger<MainDialog> logger, UserState userState, ConversationState conversationState, ApiCalls apiCalls, CustomChoicePrompt customChoicePrompt, RegisterDialog registerDialog)
            : base(nameof(AgendarDialog))
         {
             _userState = userState ?? throw new ArgumentNullException(nameof(userState));
             _conversationState = conversationState ?? throw new ArgumentNullException(nameof(conversationState));
             _logger = logger;
             _apiCalls = apiCalls;
+            _registerDialog = registerDialog;
             _dialogStateAccessor = _userState.CreateProperty<DialogState>("DialogState");
             _userStateAccessor = _userState.CreateProperty<UserProfileModel>("UserProfile");
 
+            AddDialog(registerDialog);
             AddDialog(new TextPrompt(nameof(TextPrompt)));
             AddDialog(new ChoicePrompt(nameof(ChoicePrompt), ChoiceValidatorAsync));
+            AddDialog(customChoicePrompt);
 
 
             var waterfallSteps = new WaterfallStep[]
@@ -78,10 +85,9 @@ namespace CoreBotTestDD.Dialogs
                 await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
                 return await stepContext.NextAsync();
             }
-            await stepContext.Context.SendActivityAsync("Muy bien, vamos a agendar una cita.", cancellationToken: cancellationToken);
             try
             {
-                List<JObject> DocumentTypes = await _apiCalls.GetDocumentTypeAsync();
+                List<JObject> DocumentTypes = await _apiCalls.GetDocumentTypeAsync(userProfile.CodeCompany);
                 if (DocumentTypes == null || !DocumentTypes.Any())
                 {
                     await stepContext.Context.SendActivityAsync("Error en la consulta.", cancellationToken: cancellationToken);
@@ -89,26 +95,39 @@ namespace CoreBotTestDD.Dialogs
                 }
                 else
                 {
-                    var options = DocumentTypes.Select(documentType => new
+                    int currentPage = userProfile.CurrentPage;
+                    int itemsPerPage = 6;
+                    var paginatedDocumentTypes = DocumentTypes.Skip(currentPage * itemsPerPage).Take(itemsPerPage).ToList();
+
+                    var options = paginatedDocumentTypes.Select(documentType => new
                     {
                         Id = documentType["id"].ToString(),
                         Name = documentType["name"].ToString()
-                    }).ToArray(); var optionsList = options.ToList();
-                    var newOption = new
-                    {
-                        Id = "Atras",
-                        Name = "Atras"
-                    };
+                    }).ToArray();
 
-                    optionsList.Add(newOption);
+                    var optionsList = options.ToList();
+                    if (DocumentTypes.Count > (currentPage + 1) * itemsPerPage)
+                    {
+                        var nextPageOption = new { Id = "SiguientePágina", Name = "Siguiente Página" };
+                        optionsList.Add(nextPageOption);
+                    }
+                    if (currentPage > 0)
+                    {
+                        var previousPageOption = new { Id = "PaginaAnterior", Name = "Página Anterior" };
+                        optionsList.Add(previousPageOption);
+                    }
+                    var backOption = new { Id = "Atras", Name = "Atrás" };
+                    optionsList.Add(backOption);
+
                     var promptOptions = new PromptOptions
                     {
-                        Prompt = MessageFactory.Text("Selecciona tu tipo de documento de identidad:"),
+                        Prompt = MessageFactory.Text("Para proceder, por favor identificate, ¿Cuál es tu tipo y documento de identidad?"),
                         Choices = ChoiceFactory.ToChoices(optionsList.Select(option => option.Name).ToList()),
                     };
+
                     stepContext.Values["documentOptions"] = optionsList;
                     await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
-                    return await stepContext.PromptAsync(nameof(ChoicePrompt), promptOptions, cancellationToken);
+                    return await stepContext.PromptAsync(nameof(CustomChoicePrompt), promptOptions, cancellationToken);
                 }
 
             }
@@ -136,6 +155,19 @@ namespace CoreBotTestDD.Dialogs
                     stepContext.Context.Activity.Text = null;
                     await stepContext.Context.SendActivityAsync("¿Cuentame, en que te puedo ayudar?", cancellationToken: cancellationToken);
                     return await stepContext.EndDialogAsync();
+                }else if (choice.Value.Equals("Siguiente Página", StringComparison.OrdinalIgnoreCase))
+                {
+                    userProfile.CurrentPage++;
+                    await _userStateAccessor.SetAsync(stepContext.Context, userProfile, cancellationToken);
+                    await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
+                    return await stepContext.ReplaceDialogAsync(nameof(WaterfallDialog), null, cancellationToken);
+                }
+                else if(choice.Value.Equals("Página Anterior", StringComparison.OrdinalIgnoreCase))
+                {
+                    userProfile.CurrentPage--;
+                    await _userStateAccessor.SetAsync(stepContext.Context, userProfile, cancellationToken);
+                    await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
+                    return await stepContext.ReplaceDialogAsync(nameof(WaterfallDialog), null, cancellationToken);
                 }
                 userProfile.DocumentType = selectedOption.Id;
                 await _userStateAccessor.SetAsync(stepContext.Context, userProfile, cancellationToken);
@@ -154,7 +186,8 @@ namespace CoreBotTestDD.Dialogs
         {
             var userProfile = await _userStateAccessor.GetAsync(stepContext.Context, () => new UserProfileModel(), cancellationToken);
             userProfile.SaveData = true;
-            if(userProfile.DocumentId != null) {
+            if (userProfile.DocumentId != null)
+            {
                 userProfile.SaveData = false;
                 await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
                 return await stepContext.NextAsync();
@@ -177,25 +210,24 @@ namespace CoreBotTestDD.Dialogs
                 return await stepContext.ReplaceDialogAsync(nameof(WaterfallDialog), null, cancellationToken);
             }
             userProfile.SaveData = false;
-            if(userProfile.Name == null)
+            if (userProfile.Name == null)
             {
-                var userData = await _apiCalls.GetUserByIdAsync(userProfile.DocumentType, userProfile.DocumentId);
+                var userData = await _apiCalls.GetUserByIdAsync(userProfile.DocumentType, userProfile.DocumentId, userProfile.CodeCompany);
                 try
                 {
                     userProfile.UserId = userData["id"]?.ToString();
                     userProfile.Name = userData["name"]?.ToString();
                     await stepContext.Context.SendActivityAsync("Bienvenido " + userProfile.Name);
-                }catch(Exception ex)
+                }
+                catch (Exception ex)
                 {
-                    await stepContext.Context.SendActivityAsync("Usuario no encontrado, intenta de nuevo");
-                    userProfile.DocumentType = null;
-                    userProfile.DocumentId = null;
+                    await stepContext.Context.SendActivityAsync("Lo siento, no te encuentras registrado.");
                     stepContext.Context.Activity.Text = null;
                     await _conversationState.SaveChangesAsync(stepContext.Context);
-                    return await stepContext.ReplaceDialogAsync(nameof(WaterfallDialog), null, cancellationToken);
+                    return await stepContext.BeginDialogAsync(nameof(RegisterDialog), null, cancellationToken);
                 }
             }
-            if(userProfile.Aseguradora != null)
+            if (userProfile.Aseguradora != null)
             {
                 await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
                 return await stepContext.NextAsync();
@@ -208,6 +240,12 @@ namespace CoreBotTestDD.Dialogs
         private async Task<DialogTurnResult> GetAseguradoraAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
         {
             var dialogState = await _dialogStateAccessor.GetAsync(stepContext.Context, () => new DialogState(), cancellationToken);
+            var cancellationReason = stepContext.Result as dynamic;
+            if (cancellationReason != null && cancellationReason.Reason == DialogReason.CancelCalled)
+            {
+                await ResetUserProfile(stepContext, cancellationToken);
+                return await stepContext.EndDialogAsync();
+            }
             stepContext.Values["DialogState"] = dialogState;
             var userProfile = await _userStateAccessor.GetAsync(stepContext.Context, () => new UserProfileModel(), cancellationToken);
             if (stepContext.Context.Activity.Text != null && stepContext.Context.Activity.Text.ToString().Equals("Atras", StringComparison.OrdinalIgnoreCase))
@@ -224,7 +262,7 @@ namespace CoreBotTestDD.Dialogs
             }
             try
             {
-                List<JObject> aseguradoras = await _apiCalls.GetAseguradorasAsync(stepContext.Context.Activity.Text.ToString());
+                List<JObject> aseguradoras = await _apiCalls.GetAseguradorasAsync(stepContext.Context.Activity.Text.ToString(), userProfile.CodeCompany);
                 if (aseguradoras == null || !aseguradoras.Any())
                 {
                     await stepContext.Context.SendActivityAsync("No se encontraron aseguradoras disponibles.", cancellationToken: cancellationToken);
@@ -308,7 +346,7 @@ namespace CoreBotTestDD.Dialogs
             }
             try
             {
-                List<JObject> aseguradoras = await _apiCalls.GetInsurancePlanAsync(userProfile.Aseguradora);
+                List<JObject> aseguradoras = await _apiCalls.GetInsurancePlanAsync(userProfile.Aseguradora, userProfile.CodeCompany);
                 if (aseguradoras == null || !aseguradoras.Any())
                 {
                     await stepContext.Context.SendActivityAsync("No se encontraron planes.", cancellationToken: cancellationToken);
@@ -364,7 +402,7 @@ namespace CoreBotTestDD.Dialogs
             {
                 return await stepContext.NextAsync();
             }
-            if( userProfile.PlanAseguradora == null)
+            if (userProfile.PlanAseguradora == null)
             {
                 var options = (IEnumerable<dynamic>)stepContext.Values["InsurancesPlan"];
                 var selectedOption = options.FirstOrDefault(option => option.Name == choice.Value);
@@ -383,6 +421,7 @@ namespace CoreBotTestDD.Dialogs
             var userProfile = await _userStateAccessor.GetAsync(stepContext.Context, () => new UserProfileModel(), cancellationToken);
             if (stepContext.Context.Activity.Text != null && stepContext.Context.Activity.Text.ToString().Equals("Atras", StringComparison.OrdinalIgnoreCase))
             {
+                userProfile.PlanAseguradora = null;
                 stepContext.Context.Activity.Text = null;
                 await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
                 return await stepContext.ReplaceDialogAsync(nameof(WaterfallDialog), null, cancellationToken);
@@ -393,7 +432,7 @@ namespace CoreBotTestDD.Dialogs
             };
             try
             {
-                List<JObject> Servicios = await _apiCalls.GetServicesAsync(stepContext.Context.Activity.Text.ToString());
+                List<JObject> Servicios = await _apiCalls.GetServicesAsync(stepContext.Context.Activity.Text.ToString(), userProfile.CodeCompany);
                 if (Servicios == null || !Servicios.Any())
                 {
                     await stepContext.Context.SendActivityAsync("No se encontraron servicios disponibles.", cancellationToken: cancellationToken);
@@ -490,7 +529,7 @@ namespace CoreBotTestDD.Dialogs
             };
             try
             {
-                List<JObject> especialidades = await _apiCalls.GetEspecialidadAsync(userProfile.Servicios);
+                List<JObject> especialidades = await _apiCalls.GetEspecialidadAsync(userProfile.Servicios, userProfile.CodeCompany);
                 if (especialidades == null || !especialidades.Any())
                 {
                     await stepContext.Context.SendActivityAsync("No se encontraron especialidades disponibles.", cancellationToken: cancellationToken);
@@ -551,8 +590,10 @@ namespace CoreBotTestDD.Dialogs
                 List<JObject> ScheduleAvailability = await _apiCalls.GetScheduleAvailabilityAsync(userProfile);
                 if (ScheduleAvailability == null || !ScheduleAvailability.Any())
                 {
-                    await stepContext.Context.SendActivityAsync("No se encontraron especialidades disponibles.", cancellationToken: cancellationToken);
-                    return await stepContext.ReplaceDialogAsync(nameof(WaterfallDialog), null, cancellationToken);
+                    await stepContext.Context.SendActivityAsync("No se encontro agenda disponible. ", cancellationToken: cancellationToken);
+                    await stepContext.Context.SendActivityAsync("¿Puedo ayudarte en algo mas? ", cancellationToken: cancellationToken);
+                    await ResetUserProfile(stepContext);
+                    return await stepContext.EndDialogAsync();
                 }
                 else
                 {
@@ -571,7 +612,7 @@ namespace CoreBotTestDD.Dialogs
                     }).ToList();
                     var promptOptions = new PromptOptions
                     {
-                        Prompt = MessageFactory.Text("Selecciona una fecha para tu cita: "+ Environment.NewLine),
+                        Prompt = MessageFactory.Text("Selecciona una fecha para tu cita: " + Environment.NewLine),
                         Choices = ChoiceFactory.ToChoices(options.Select(option => option.DateTime).ToList()),
                         Style = ListStyle.List
                     };
@@ -652,39 +693,43 @@ namespace CoreBotTestDD.Dialogs
             var userProfile = await _userStateAccessor.GetAsync(stepContext.Context, () => new UserProfileModel(), cancellationToken);
             var choice = (FoundChoice)stepContext.Result;
             var selectedOption = options.FirstOrDefault(option => option.DateTime == choice.Value);
-                if (choice != null && choice.Value.Equals("Atras", StringComparison.OrdinalIgnoreCase))
-                {
-                    return await stepContext.ReplaceDialogAsync(nameof(WaterfallDialog), null, cancellationToken);
-                }
-                if (choice.Value.Equals("Si", StringComparison.OrdinalIgnoreCase))
-                {
-                    await stepContext.Context.SendActivityAsync("Agendando cita...");
-                    bool result = await _apiCalls.PostCreateCitaAsync(userProfile, stepContext.Values["DataCita"]);
-                    await Task.Delay(3000);
-                    if(result == true)
+            if (choice != null && choice.Value.Equals("Atras", StringComparison.OrdinalIgnoreCase))
+            {
+                return await stepContext.ReplaceDialogAsync(nameof(WaterfallDialog), null, cancellationToken);
+            }
+            if (choice.Value.Equals("Si", StringComparison.OrdinalIgnoreCase))
+            {
+                await stepContext.Context.SendActivityAsync("Agendando cita...");
+                bool result = await _apiCalls.PostCreateCitaAsync(userProfile, stepContext.Values["DataCita"]);
+                await ResetUserProfile(stepContext);
+                await Task.Delay(3000);
+                if (result == true)
                 {
                     await stepContext.Context.SendActivityAsync("Cita agendada correctamente.");
                     await stepContext.Context.SendActivityAsync("¿Te podemos ayudar en algo mas?");
-                    return await stepContext.NextAsync();
+                    return await stepContext.EndDialogAsync();
                 }
                 else
                 {
                     await stepContext.Context.SendActivityAsync("Error al generar la cita. Intenta mas tarde.");
-                    return await stepContext.NextAsync();
+                    return await stepContext.EndDialogAsync();
 
                 }
-
+            }
+            else if (choice.Value.Equals("No", StringComparison.OrdinalIgnoreCase))
+            {
+                await _userState.ClearStateAsync(stepContext.Context);
+                stepContext.Values.Clear();
+                await ResetUserProfile(stepContext);
+                await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
+                await stepContext.Context.SendActivityAsync("Agendamiento cancelado. ¿Te podemos ayudar en algo mas?");
                 return await stepContext.NextAsync();
-
             }
             else
             {
                 return await stepContext.ReplaceDialogAsync(nameof(WaterfallDialog), null, cancellationToken);
             }
-            stepContext.Values["DataCita"] = selectedOption;
-
-                return await stepContext.NextAsync();
-            }
+        }
         private Task<bool> ChoiceValidatorAsync(PromptValidatorContext<FoundChoice> promptContext, CancellationToken cancellationToken)
         {
             var selectedOption = promptContext.Recognized.Value;
@@ -693,7 +738,6 @@ namespace CoreBotTestDD.Dialogs
                 promptContext.Context.SendActivityAsync("Por favor, selecciona una opción válida.", cancellationToken: cancellationToken);
                 return Task.FromResult(false); // Indicar que la validación falló
             }
-            // Validación exitosa
             return Task.FromResult(true);
         }
 
@@ -731,6 +775,23 @@ namespace CoreBotTestDD.Dialogs
             }
             await _userState.SaveChangesAsync(Context.Context, false, cancellationToken);
             return message; ;
+        }
+
+        private async Task ResetUserProfile(DialogContext context, CancellationToken cancellationToken = default)
+        {
+            var userProfile = await _userStateAccessor.GetAsync(context.Context, () => new UserProfileModel(), cancellationToken);
+
+            userProfile.UserId = null;
+            userProfile.Name = null;
+            userProfile.especialidad = null;
+            userProfile.DocumentId = null;
+            userProfile.DocumentType = null;
+            userProfile.Aseguradora = null;
+            userProfile.PlanAseguradora = null;
+            userProfile.Servicios = null;
+
+            await _userStateAccessor.SetAsync(context.Context, userProfile, cancellationToken);
+            await _userState.SaveChangesAsync(context.Context, false, cancellationToken);
         }
     }
 }

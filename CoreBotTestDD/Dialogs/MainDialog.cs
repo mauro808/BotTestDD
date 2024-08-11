@@ -3,13 +3,16 @@
 using CoreBotTestDD.CognitiveModels;
 using CoreBotTestDD.Models;
 using CoreBotTestDD.Services;
+using CoreBotTestDD.Utilities;
 using Microsoft.Bot.Builder;
 using Microsoft.Bot.Builder.Dialogs;
 using Microsoft.Bot.Schema;
 using Microsoft.Extensions.Logging;
 using Microsoft.Recognizers.Text.DataTypes.TimexExpression;
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -23,16 +26,18 @@ namespace CoreBotTestDD.Dialogs
         private readonly AgendarDialog _agendarDialog;
         private readonly CLUService _cluService;
         private readonly CQAService _cqaService;
+        private readonly ClientMessages _clientMessages;
         private readonly ILogger _logger;
         private readonly IStatePropertyAccessor<UserProfileModel> _userStateAccessor;
 
-        public MainDialog(CLUService cluService, CQAService cqaService, ILogger<MainDialog> logger, UserState userState, ConversationState conversationState, AgendarDialog agendarDialog)
+        public MainDialog(CLUService cluService, CQAService cqaService, ClientMessages clientMessages, ILogger<MainDialog> logger, UserState userState, ConversationState conversationState, AgendarDialog agendarDialog)
             : base(nameof(MainDialog))
         {
             _userState = userState ?? throw new ArgumentNullException(nameof(userState));
             _conversationState = conversationState ?? throw new ArgumentNullException(nameof(conversationState));
             _cluService = cluService;
             _cqaService = cqaService;
+            _clientMessages = clientMessages;
             _logger = logger;
             _userStateAccessor = _userState.CreateProperty<UserProfileModel>("UserProfile");
             _agendarDialog = agendarDialog;
@@ -56,17 +61,19 @@ namespace CoreBotTestDD.Dialogs
             var userProfile = await _userStateAccessor.GetAsync(stepContext.Context, () => new UserProfileModel { IsNewUser = true }, cancellationToken);
             if (userProfile.IsNewUser)
             {
-                await stepContext.Context.SendActivityAsync(MessageFactory.Text("¡Hola! Soy un bot MVP para la verificacion de capacidades del framework Bot SDK. ¿Como podria ayudarte?"));
-                userProfile.IsNewUser = false; 
+                userProfile.CodeCompany = await _clientMessages.GetClientSha("whatsapp:+573247496430");
+                //await stepContext.Context.SendActivityAsync(MessageFactory.Text(await _clientMessages.GetClientMessages("Bienvenida", userProfile.CodeCompany)));
+                //await stepContext.Context.SendActivityAsync(MessageFactory.Text(await _clientMessages.GetClientMessages("Tratamiento datos personales", userProfile.CodeCompany)));
+                await stepContext.Context.SendActivityAsync(MessageFactory.Text("Hola! Soy el asistente virtual de Mederi. Al continuar, aceptas nuestros términos y condiciones [Url de tratamiento de datos]. Te puedo ayudar a agendar y/o gestionar tus citas y pedir información  ¿En qué puedo ayudarte hoy?"));
+                userProfile.IsNewUser = false;
             }
             await _userStateAccessor.SetAsync(stepContext.Context, userProfile, cancellationToken);
             await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
             return await stepContext.NextAsync(null, cancellationToken);
         }
-
-        private async Task<DialogTurnResult> ActStepAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
-        {
-            var userProfile = await _userStateAccessor.GetAsync(stepContext.Context, () => new UserProfileModel(), cancellationToken);
+private async Task<DialogTurnResult> ActStepAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
+{
+    var userProfile = await _userStateAccessor.GetAsync(stepContext.Context, () => new UserProfileModel(), cancellationToken);
             return new DialogTurnResult(DialogTurnStatus.Waiting);
         }
 
@@ -83,6 +90,7 @@ namespace CoreBotTestDD.Dialogs
             }
             else
             {
+                await stepContext.Context.SendActivityAsync("Muy bien, vamos a agendar una cita.", cancellationToken: cancellationToken);
                 return await stepContext.BeginDialogAsync(nameof(AgendarDialog),null,  cancellationToken);
             }
             return await stepContext.NextAsync(null, cancellationToken);

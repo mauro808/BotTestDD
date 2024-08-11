@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("CoreBotTestDD")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+3b6e2b1200aae9cbe91531c1e9088d7717fefd9d")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+9cb07f1b623170a54e28f3e09015229af805d51d")]
 [assembly: System.Reflection.AssemblyProductAttribute("CoreBotTestDD")]
 [assembly: System.Reflection.AssemblyTitleAttribute("CoreBotTestDD")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
