@@ -42,11 +42,6 @@ public class CustomChoicePrompt : ChoicePrompt
             {
                 return promptRecognizerResult;
             }
-            var response2 = await _cluService.AnalyzeTextEntitiesAsync(text);
-            if(response2 != null)
-            {
-                text = response2;
-            }
             /**var response = await _cluService.AnalyzeTextAsync(text);
             if (response != null)
             {
@@ -59,6 +54,20 @@ public class CustomChoicePrompt : ChoicePrompt
             {
                 promptRecognizerResult.Succeeded = true;
                 promptRecognizerResult.Value = list2[0].Resolution;
+            }
+            else
+            {
+                var response2 = await _cluService.AnalyzeTextEntitiesAsync(text);
+                if (response2 != null)
+                {
+                    text = response2;
+                    list2 = ChoiceRecognizers.RecognizeChoices(text, list, findChoicesOptions);
+                    if (list2 != null && list2.Count > 0)
+                    {
+                        promptRecognizerResult.Succeeded = true;
+                        promptRecognizerResult.Value = list2[0].Resolution;
+                    }
+                }
             }
         }
 

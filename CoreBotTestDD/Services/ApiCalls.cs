@@ -730,32 +730,9 @@ namespace CoreBotTestDD.Services
 
         }
 
-        public async Task<bool> PostCreateUserAsync(UserProfileModel userProfile, object data)
+        public async Task<string> PostCreateUserAsync(UserProfileModel userProfile)
         {
             var url = "https://api-users-test-001.azurewebsites.net/Patient";
-            string dateTimeString = (string)data.GetType().GetProperty("DateTime").GetValue(data);
-            DateTime dateTime = DateTime.Parse(dateTimeString);
-            DateTime newDateTime = dateTime;
-            var appointmentTypeIdProp = data.GetType().GetProperty("AppointmentTypeId");
-            var userIdProp = data.GetType().GetProperty("UserId");
-            var officeIdProp = data.GetType().GetProperty("OfficeId");
-            string appointmentTypeIdStr = appointmentTypeIdProp?.GetValue(data) as string;
-            string userIdStr = userIdProp?.GetValue(data) as string;
-            string officeIdStr = officeIdProp?.GetValue(data) as string;
-            if (!int.TryParse(appointmentTypeIdStr, out int appointmentTypeId))
-            {
-                throw new ArgumentException("AppointmentTypeId no es un entero válido.");
-            }
-
-            if (!int.TryParse(userIdStr, out int userId))
-            {
-                throw new ArgumentException("UserId no es un entero válido.");
-            }
-
-            if (!int.TryParse(officeIdStr, out int officeId))
-            {
-                throw new ArgumentException("OfficeID no es un entero válido.");
-            }
             using (HttpClient client = new HttpClient())
             {
                 try
@@ -763,20 +740,21 @@ namespace CoreBotTestDD.Services
                     client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", await AutenticationAsync(userProfile.CodeCompany));
                     var parametros = new
                     {
-                        AppointmentTypeID = appointmentTypeId,
-                        UserID = int.Parse(userProfile.UserId),
-                        InsuranceID = int.Parse(userProfile.Aseguradora),
-                        DoctorID = userId,
-                        ServiceID = int.Parse(userProfile.Servicios),
-                        DateFrom = dateTime,
-                        To = newDateTime.ToString("HH:mm:ss tt"),
-                        State = "P",
-                        Message = "",
-                        InsurancePlanID = int.Parse(userProfile.PlanAseguradora),
-                        OfficeID = officeId,
-                        Telemedicine = false,
-                        SpecialtyID = int.Parse(userProfile.especialidad),
-                        Origin = 3,
+                        DocumentType = new { Id = int.Parse(userProfile.DocumentType) },
+                        Document = userProfile.DocumentId,
+                        userProfile.Name,
+                        userProfile.LastName,
+                        InsuranceId = new { Id = int.Parse(userProfile.Aseguradora) },
+                        InsurancePlan = new { Id = int.Parse(userProfile.PlanAseguradora) },
+                        userProfile.Email,
+                        BirthDate = userProfile.birthdate,
+                        Genre = userProfile.Gender,
+                        city = new { Id = int.Parse(userProfile.City) },
+                        CellPhone = userProfile.Phone,
+                        userProfile.Address,
+                        PatientType = new { Id = int.Parse(userProfile.PatientType) },
+                        AffiliationType = new { Id = int.Parse(userProfile.Affiliation) },
+                        MaritalStatus = new { Id = int.Parse(userProfile.MaritalStatus) },
                     };
                     var jsonContent = JsonConvert.SerializeObject(parametros);
                     var httpContent = new StringContent(jsonContent, Encoding.UTF8, "application/json");
@@ -786,32 +764,34 @@ namespace CoreBotTestDD.Services
                     {
                         if (response.StatusCode.Equals("204"))
                         {
-                            return false;
+                            return null;
                         }
                         string jsonResponse = await response.Content.ReadAsStringAsync();
-                        bool responseRef = await PostRefreshCitaAsync(JObject.Parse(jsonResponse), userProfile.CodeCompany);
-                        if (responseRef == true)
+                        try
                         {
-                            return true;
+                            JObject jsonObject = JObject.Parse(jsonResponse);
+                            string id = jsonObject["id"].ToString();
+                            return id;
                         }
-                        else
+                        catch (Exception ex)
                         {
-                            return false;
+                            return "error";
                         }
                     }
                     else
                     {
                         Console.WriteLine($"Error: {response.StatusCode}");
-                        return false;
+                        return "error";
                     }
                 }
                 catch (Exception ex)
                 {
                     Console.WriteLine($"Excepción: {ex.Message}");
-                    return false;
+                    return "error";
                 }
             }
 
         }
+
     }
     }

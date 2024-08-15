@@ -8,6 +8,7 @@ using Microsoft.Bot.Builder;
 using Microsoft.Bot.Builder.Integration.AspNet.Core;
 using Newtonsoft.Json;
 using System;
+using System.IO;
 using System.Threading.Tasks;
 
 namespace CoreBotTestDD.Controllers
@@ -36,6 +37,7 @@ namespace CoreBotTestDD.Controllers
             {
                 // Delegate the processing of the HTTP POST to the adapter.
                 // The adapter will invoke the bot.
+                //var requestBody = await new StreamReader(Request.Body).ReadToEndAsync();
                 await _adapter.ProcessAsync(Request, Response, _bot);
             }
             catch (Exception ex)

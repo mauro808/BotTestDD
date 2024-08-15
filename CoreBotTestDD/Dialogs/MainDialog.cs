@@ -61,7 +61,8 @@ namespace CoreBotTestDD.Dialogs
             var userProfile = await _userStateAccessor.GetAsync(stepContext.Context, () => new UserProfileModel { IsNewUser = true }, cancellationToken);
             if (userProfile.IsNewUser)
             {
-                userProfile.CodeCompany = await _clientMessages.GetClientSha("whatsapp:+573247496430");
+                userProfile.CodeCompany = "6b5e37ce5ee0ef483fd1fe928ad28d283109bfcf6bd09f29a6682b5fe8fef17b";
+                //userProfile.CodeCompany = await _clientMessages.GetClientSha("whatsapp:+573247496430");
                 //await stepContext.Context.SendActivityAsync(MessageFactory.Text(await _clientMessages.GetClientMessages("Bienvenida", userProfile.CodeCompany)));
                 //await stepContext.Context.SendActivityAsync(MessageFactory.Text(await _clientMessages.GetClientMessages("Tratamiento datos personales", userProfile.CodeCompany)));
                 await stepContext.Context.SendActivityAsync(MessageFactory.Text("Hola! Soy el asistente virtual de Mederi. Al continuar, aceptas nuestros términos y condiciones [Url de tratamiento de datos]. Te puedo ayudar a agendar y/o gestionar tus citas y pedir información  ¿En qué puedo ayudarte hoy?"));
@@ -88,10 +89,14 @@ private async Task<DialogTurnResult> ActStepAsync(WaterfallStepContext stepConte
                 await stepContext.Context.SendActivityAsync("¿Puedo ayudarte en algo mas?");
 
             }
-            else
+            else if(generalScore == "Agendar")
             {
                 await stepContext.Context.SendActivityAsync("Muy bien, vamos a agendar una cita.", cancellationToken: cancellationToken);
                 return await stepContext.BeginDialogAsync(nameof(AgendarDialog),null,  cancellationToken);
+            }
+            else
+            {
+                await stepContext.Context.SendActivityAsync("No he encontrado una respuesta para tu pregunta. (Texto a mostrar)");
             }
             return await stepContext.NextAsync(null, cancellationToken);
         }

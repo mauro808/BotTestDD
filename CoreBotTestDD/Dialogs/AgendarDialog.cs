@@ -26,19 +26,21 @@ namespace CoreBotTestDD.Dialogs
     {
         private readonly UserState _userState;
         private readonly ApiCalls _apiCalls;
+        private readonly CLUService _cluService;
         private readonly ConversationState _conversationState;
         private readonly RegisterDialog _registerDialog;
         private readonly ILogger _logger;
         private readonly IStatePropertyAccessor<DialogState> _dialogStateAccessor;
         private readonly IStatePropertyAccessor<UserProfileModel> _userStateAccessor;
 
-        public AgendarDialog(ILogger<MainDialog> logger, UserState userState, ConversationState conversationState, ApiCalls apiCalls, CustomChoicePrompt customChoicePrompt, RegisterDialog registerDialog)
+        public AgendarDialog(ILogger<MainDialog> logger, CLUService cluService, UserState userState, ConversationState conversationState, ApiCalls apiCalls, CustomChoicePrompt customChoicePrompt, RegisterDialog registerDialog)
            : base(nameof(AgendarDialog))
         {
             _userState = userState ?? throw new ArgumentNullException(nameof(userState));
             _conversationState = conversationState ?? throw new ArgumentNullException(nameof(conversationState));
             _logger = logger;
             _apiCalls = apiCalls;
+            _cluService = cluService;
             _registerDialog = registerDialog;
             _dialogStateAccessor = _userState.CreateProperty<DialogState>("DialogState");
             _userStateAccessor = _userState.CreateProperty<UserProfileModel>("UserProfile");
@@ -192,7 +194,7 @@ namespace CoreBotTestDD.Dialogs
                 await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
                 return await stepContext.NextAsync();
             }
-            await stepContext.Context.SendActivityAsync("Escribe el numero de tu documento: Escribe atras si quieres cambiar tu informacion anterior.");
+            await stepContext.Context.SendActivityAsync("Escribe el numero de tu documento sin puntos ni comas. (Ejemplo: 1001122345) Escribe atras si quieres cambiar tu informacion anterior.");
             await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
             return new DialogTurnResult(DialogTurnStatus.Waiting);
         }
@@ -232,7 +234,7 @@ namespace CoreBotTestDD.Dialogs
                 await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
                 return await stepContext.NextAsync();
             }
-            await stepContext.Context.SendActivityAsync("¿Con que entidad de salud deseas solicitar la cita? Escribe atras si quieres cambiar tu informacion anterior. ");
+            await stepContext.Context.SendActivityAsync("¿Con que entidad de salud deseas solicitar la cita? (Ejemplo: Sura) Escribe atras si quieres cambiar tu informacion anterior. ");
             await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
             return new DialogTurnResult(DialogTurnStatus.Waiting);
         }
@@ -241,11 +243,14 @@ namespace CoreBotTestDD.Dialogs
         {
             var dialogState = await _dialogStateAccessor.GetAsync(stepContext.Context, () => new DialogState(), cancellationToken);
             var cancellationReason = stepContext.Result as dynamic;
-            if (cancellationReason != null && cancellationReason.Reason == DialogReason.CancelCalled)
+            try
             {
-                await ResetUserProfile(stepContext, cancellationToken);
-                return await stepContext.EndDialogAsync();
-            }
+                if (cancellationReason.Reason != null && cancellationReason.Reason == DialogReason.CancelCalled)
+                {
+                    await ResetUserProfile(stepContext, cancellationToken);
+                    return await stepContext.EndDialogAsync();
+                }
+            }catch(Exception e) { };
             stepContext.Values["DialogState"] = dialogState;
             var userProfile = await _userStateAccessor.GetAsync(stepContext.Context, () => new UserProfileModel(), cancellationToken);
             if (stepContext.Context.Activity.Text != null && stepContext.Context.Activity.Text.ToString().Equals("Atras", StringComparison.OrdinalIgnoreCase))
@@ -290,7 +295,7 @@ namespace CoreBotTestDD.Dialogs
                     };
                     stepContext.Values["Insurances"] = optionsList;
                     await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
-                    return await stepContext.PromptAsync(nameof(ChoicePrompt), promptOptions, cancellationToken);
+                    return await stepContext.PromptAsync(nameof(CustomChoicePrompt), promptOptions, cancellationToken);
                 }
 
             }
@@ -374,7 +379,7 @@ namespace CoreBotTestDD.Dialogs
                     };
                     stepContext.Values["InsurancesPlan"] = optionsList;
                     await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
-                    return await stepContext.PromptAsync(nameof(ChoicePrompt), promptOptions, cancellationToken);
+                    return await stepContext.PromptAsync(nameof(CustomChoicePrompt), promptOptions, cancellationToken);
                 }
 
             }
@@ -408,7 +413,7 @@ namespace CoreBotTestDD.Dialogs
                 var selectedOption = options.FirstOrDefault(option => option.Name == choice.Value);
                 userProfile.PlanAseguradora = selectedOption.Id;
             }
-            await stepContext.Context.SendActivityAsync("Que servicio deseas agendar? Escribe atras si quieres cambiar tu informacion anterior.");
+            await stepContext.Context.SendActivityAsync("Que servicio deseas agendar? (Ejemplo: Cardiologia) \n\n Escribe atras si quieres cambiar tu informacion anterior.");
             userProfile.SaveData = false;
             await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
             return new DialogTurnResult(DialogTurnStatus.Waiting);
@@ -432,7 +437,16 @@ namespace CoreBotTestDD.Dialogs
             };
             try
             {
-                List<JObject> Servicios = await _apiCalls.GetServicesAsync(stepContext.Context.Activity.Text.ToString(), userProfile.CodeCompany);
+                List<JObject> Servicios;
+                string text = await _cluService.AnalyzeTextEntitiesAsync(stepContext.Context.Activity.Text.ToString());
+                if(text != null)
+                {
+                    Servicios = await _apiCalls.GetServicesAsync(text, userProfile.CodeCompany);
+                }
+                else
+                {
+                    Servicios = await _apiCalls.GetServicesAsync(stepContext.Context.Activity.Text.ToString(), userProfile.CodeCompany);
+                }
                 if (Servicios == null || !Servicios.Any())
                 {
                     await stepContext.Context.SendActivityAsync("No se encontraron servicios disponibles.", cancellationToken: cancellationToken);
@@ -465,7 +479,7 @@ namespace CoreBotTestDD.Dialogs
                     };
                     stepContext.Values["Services"] = optionsList;
                     await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
-                    return await stepContext.PromptAsync(nameof(ChoicePrompt), promptOptions, cancellationToken);
+                    return await stepContext.PromptAsync(nameof(CustomChoicePrompt), promptOptions, cancellationToken);
                 }
 
             }
@@ -557,7 +571,7 @@ namespace CoreBotTestDD.Dialogs
                     };
                     stepContext.Values["Especialidades"] = optionsList;
                     await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
-                    return await stepContext.PromptAsync(nameof(ChoicePrompt), promptOptions, cancellationToken);
+                    return await stepContext.PromptAsync(nameof(CustomChoicePrompt), promptOptions, cancellationToken);
                 }
 
             }
@@ -619,7 +633,7 @@ namespace CoreBotTestDD.Dialogs
 
                     stepContext.Values["ScheduleAvailability"] = options;
                     await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
-                    return await stepContext.PromptAsync(nameof(ChoicePrompt), promptOptions, cancellationToken);
+                    return await stepContext.PromptAsync(nameof(CustomChoicePrompt), promptOptions, cancellationToken);
                 }
 
             }
@@ -676,7 +690,7 @@ namespace CoreBotTestDD.Dialogs
                 };
                 var option = stepContext.Values["DataCita"];
                 await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
-                return await stepContext.PromptAsync(nameof(ChoicePrompt), promptOptions, cancellationToken);
+                return await stepContext.PromptAsync(nameof(CustomChoicePrompt), promptOptions, cancellationToken);
 
             }
             catch (Exception ex)

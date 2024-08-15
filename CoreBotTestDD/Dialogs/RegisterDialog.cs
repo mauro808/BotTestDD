@@ -16,7 +16,7 @@ using DonBot.Utilities;
 
 namespace DonBot.Dialogs
 {
-    public class RegisterDialog: ComponentDialog
+    public class RegisterDialog : ComponentDialog
     {
         private readonly UserState _userState;
         private readonly ApiCalls _apiCalls;
@@ -62,7 +62,8 @@ namespace DonBot.Dialogs
                 GetPatientTypeAsync,
                 HandlePatientTypeAsync,
                 GetAddressAsync,
-                GetConfirmationAsync
+                GetConfirmationAsync,
+                HandleCreateUserSelectionAsync
             };
 
             AddDialog(new WaterfallDialog(nameof(WaterfallDialog), waterfallSteps));
@@ -92,7 +93,7 @@ namespace DonBot.Dialogs
             };
             stepContext.Values["Choice"] = choices;
             await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
-            return await stepContext.PromptAsync(nameof(ChoicePrompt), promptOptions, cancellationToken);
+            return await stepContext.PromptAsync(nameof(CustomChoicePrompt), promptOptions, cancellationToken);
         }
 
         private async Task<DialogTurnResult> HandleRegisterSelectionAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
@@ -263,9 +264,10 @@ namespace DonBot.Dialogs
                     };
                     stepContext.Values["Genders"] = optionsList;
                     await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
-                    return await stepContext.PromptAsync(nameof(ChoicePrompt), promptOptions, cancellationToken);
+                    return await stepContext.PromptAsync(nameof(CustomChoicePrompt), promptOptions, cancellationToken);
                 }
-            }catch (Exception e)
+            }
+            catch (Exception e)
             {
                 await stepContext.Context.SendActivityAsync("Error en la consulta");
                 return await stepContext.EndDialogAsync();
@@ -380,7 +382,7 @@ namespace DonBot.Dialogs
                     };
                     stepContext.Values["Insurances"] = optionsList;
                     await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
-                    return await stepContext.PromptAsync(nameof(ChoicePrompt), promptOptions, cancellationToken);
+                    return await stepContext.PromptAsync(nameof(CustomChoicePrompt), promptOptions, cancellationToken);
                 }
 
             }
@@ -464,7 +466,7 @@ namespace DonBot.Dialogs
                     };
                     stepContext.Values["InsurancesPlan"] = optionsList;
                     await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
-                    return await stepContext.PromptAsync(nameof(ChoicePrompt), promptOptions, cancellationToken);
+                    return await stepContext.PromptAsync(nameof(CustomChoicePrompt), promptOptions, cancellationToken);
                 }
 
             }
@@ -478,7 +480,7 @@ namespace DonBot.Dialogs
         private async Task<DialogTurnResult> GetMaritalStatusAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
         {
             var userProfile = await _userStateAccessor.GetAsync(stepContext.Context, () => new UserProfileModel(), cancellationToken);
-            if(userProfile.MaritalStatus != null)
+            if (userProfile.MaritalStatus != null)
             {
                 return await stepContext.NextAsync();
             }
@@ -491,7 +493,7 @@ namespace DonBot.Dialogs
                 await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
                 return await stepContext.ReplaceDialogAsync(nameof(WaterfallDialog), null, cancellationToken);
             }
-            if(userProfile.PlanAseguradora == null)
+            if (userProfile.PlanAseguradora == null)
             {
                 var optionsAn = (IEnumerable<dynamic>)stepContext.Values["InsurancesPlan"];
                 var choice = (FoundChoice)stepContext.Result;
@@ -528,7 +530,7 @@ namespace DonBot.Dialogs
                     };
                     stepContext.Values["MaritalStatus"] = optionsList;
                     await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
-                    return await stepContext.PromptAsync(nameof(ChoicePrompt), promptOptions, cancellationToken);
+                    return await stepContext.PromptAsync(nameof(CustomChoicePrompt), promptOptions, cancellationToken);
                 }
             }
             catch (Exception e)
@@ -554,7 +556,7 @@ namespace DonBot.Dialogs
                 await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
                 return await stepContext.ReplaceDialogAsync(nameof(WaterfallDialog), null, cancellationToken);
             }
-            if(userProfile.MaritalStatus == null)
+            if (userProfile.MaritalStatus == null)
             {
                 var options = (IEnumerable<dynamic>)stepContext.Values["MaritalStatus"];
                 var choice = (FoundChoice)stepContext.Result;
@@ -592,7 +594,7 @@ namespace DonBot.Dialogs
                     };
                     stepContext.Values["AfiliationType"] = optionsList;
                     await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
-                    return await stepContext.PromptAsync(nameof(ChoicePrompt), promptOptions, cancellationToken);
+                    return await stepContext.PromptAsync(nameof(CustomChoicePrompt), promptOptions, cancellationToken);
                 }
 
             }
@@ -619,7 +621,7 @@ namespace DonBot.Dialogs
             {
                 return await stepContext.NextAsync();
             }
-            if(userProfile.Affiliation == null)
+            if (userProfile.Affiliation == null)
             {
                 var options = (IEnumerable<dynamic>)stepContext.Values["AfiliationType"];
                 var selectedOption = options.FirstOrDefault(option => option.Name == choice.Value);
@@ -689,7 +691,7 @@ namespace DonBot.Dialogs
                     };
                     stepContext.Values["Ciudades"] = optionsList;
                     await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
-                    return await stepContext.PromptAsync(nameof(ChoicePrompt), promptOptions, cancellationToken);
+                    return await stepContext.PromptAsync(nameof(CustomChoicePrompt), promptOptions, cancellationToken);
                 }
 
             }
@@ -850,10 +852,72 @@ namespace DonBot.Dialogs
                 await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
                 return await stepContext.ReplaceDialogAsync(nameof(WaterfallDialog), null, cancellationToken);
             }
-            string message =await _apiCalls.GetUserDataCreationAsync(userProfile);
+            string message = await _apiCalls.GetUserDataCreationAsync(userProfile);
             await stepContext.Context.SendActivityAsync(message);
+            var choices = new List<Choice>
+        {
+            new Choice { Value = "Si" },
+            new Choice { Value = "No" }
+        };
+            var promptOptions = new PromptOptions
+            {
+                Prompt = MessageFactory.Text("¿Deseas proceder a registrar el usuario?"),
+                Choices = choices,
+                Style = ListStyle.List
+            };
+            stepContext.Values["Choice"] = choices;
             await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
-            return new DialogTurnResult(DialogTurnStatus.Waiting);
+            return await stepContext.PromptAsync(nameof(ChoicePrompt), promptOptions, cancellationToken);
+        }
+
+        private async Task<DialogTurnResult> HandleCreateUserSelectionAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
+        {
+            var userProfile = await _userStateAccessor.GetAsync(stepContext.Context, () => new UserProfileModel(), cancellationToken);
+            var choice = (FoundChoice)stepContext.Result;
+            if (choice.Value != null && choice.Value.Equals("Atras", StringComparison.OrdinalIgnoreCase))
+            {
+                stepContext.Context.Activity.Text = null;
+                await _conversationState.SaveChangesAsync(stepContext.Context);
+                await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
+                return await stepContext.ReplaceDialogAsync(nameof(WaterfallDialog), null, cancellationToken);
+            }
+            else if (choice.Value.Equals("Si", StringComparison.OrdinalIgnoreCase))
+            {
+                string response = await _apiCalls.PostCreateUserAsync(userProfile);
+                if (response == "3")
+                {
+                    await stepContext.Context.SendActivityAsync("Este usuario ya existe.");
+                    await stepContext.Context.SendActivityAsync(" ¿Te podemos ayudar en algo mas?");
+                    var cancellationReason = new { Reason = DialogReason.CancelCalled };
+                    await stepContext.CancelAllDialogsAsync(cancellationToken);
+                    await ResetUserProfile(stepContext, cancellationToken);
+                    return await stepContext.EndDialogAsync(cancellationReason, cancellationToken);
+                }
+                else if(response == "error")
+                {
+                    await stepContext.Context.SendActivityAsync("Se ha producido un error en la creacion del usuario, intenta mas tarde.", cancellationToken: cancellationToken);
+                    var cancellationReason = new { Reason = DialogReason.CancelCalled };
+                    await stepContext.CancelAllDialogsAsync(cancellationToken);
+                    await ResetUserProfile(stepContext, cancellationToken);
+                    return await stepContext.EndDialogAsync(cancellationReason, cancellationToken);
+                }
+                else
+                {
+                    stepContext.Context.Activity.Text = null;
+                    userProfile.Choice = false;
+                    await _conversationState.SaveChangesAsync(stepContext.Context);
+                    await stepContext.Context.SendActivityAsync("Tu usuario ha sido creado con exito, puedes proceder con el agendamiento de la cita.", cancellationToken: cancellationToken);
+                    return await stepContext.EndDialogAsync();
+                }
+            }
+            else
+            {
+                await stepContext.Context.SendActivityAsync(" ¿Te podemos ayudar en algo mas?");
+                var cancellationReason = new { Reason = DialogReason.CancelCalled };
+                await stepContext.CancelAllDialogsAsync(cancellationToken);
+                await ResetUserProfile(stepContext, cancellationToken);
+                return await stepContext.EndDialogAsync(cancellationReason, cancellationToken);
+            }
         }
 
         private Task<bool> ChoiceValidatorAsync(PromptValidatorContext<FoundChoice> promptContext, CancellationToken cancellationToken)
@@ -890,7 +954,7 @@ namespace DonBot.Dialogs
             var userProfile = await _userStateAccessor.GetAsync(Context.Context, () => new UserProfileModel(), cancellationToken);
             string message;
             DataValidation dataValidation = new();
-            if(data.Equals("Atras", StringComparison.OrdinalIgnoreCase))
+            if (data.Equals("Atras", StringComparison.OrdinalIgnoreCase))
             {
                 return message = "";
             }
@@ -898,14 +962,16 @@ namespace DonBot.Dialogs
             {
                 userProfile.Name = data;
                 message = "";
-            }else if (string.IsNullOrEmpty(userProfile.LastName))
+            }
+            else if (string.IsNullOrEmpty(userProfile.LastName))
             {
                 userProfile.LastName = data;
                 message = "";
-            }else if (string.IsNullOrEmpty(userProfile.Phone))
+            }
+            else if (string.IsNullOrEmpty(userProfile.Phone))
             {
                 message = dataValidation.ValidatePhone(data);
-                if(message == "")
+                if (message == "")
                 {
                     userProfile.Phone = data;
                 }
@@ -937,6 +1003,32 @@ namespace DonBot.Dialogs
             }
             await _userState.SaveChangesAsync(Context.Context, false, cancellationToken);
             return message; ;
+        }
+
+        private async Task ResetUserProfile(DialogContext context, CancellationToken cancellationToken = default)
+        {
+            var userProfile = await _userStateAccessor.GetAsync(context.Context, () => new UserProfileModel(), cancellationToken);
+
+            userProfile.UserId = null;
+            userProfile.Name = null;
+            userProfile.LastName = null;
+            userProfile.DocumentId = null;
+            userProfile.DocumentType = null;
+            userProfile.Aseguradora = null;
+            userProfile.PlanAseguradora = null;
+            userProfile.Address = null;
+            userProfile.birthdate = null;
+            userProfile.Phone = null;
+            userProfile.PatientType = null;
+            userProfile.Affiliation = null;
+            userProfile.City = null;
+            userProfile.Email = null;
+            userProfile.Gender = null;
+            userProfile.MaritalStatus = null;
+            userProfile.Choice = false;
+
+            await _userStateAccessor.SetAsync(context.Context, userProfile, cancellationToken);
+            await _userState.SaveChangesAsync(context.Context, false, cancellationToken);
         }
     }
 }
