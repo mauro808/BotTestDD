@@ -551,6 +551,12 @@ namespace CoreBotTestDD.Dialogs
                 }
                 else
                 {
+                    if(especialidades.Count == 1)
+                    {
+                        userProfile.especialidad = especialidades[0]["id"].ToString();
+                        await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
+                        return await stepContext.NextAsync();
+                    }
                     var options = especialidades.Select(documentType => new
                     {
                         Id = documentType["id"].ToString(),
@@ -585,20 +591,23 @@ namespace CoreBotTestDD.Dialogs
 
         private async Task<DialogTurnResult> GetScheduleAvailabilityAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
         {
-            var optionsAnt = (IEnumerable<dynamic>)stepContext.Values["Especialidades"];
-            var choice = (FoundChoice)stepContext.Result;
             var userProfile = await _userStateAccessor.GetAsync(stepContext.Context, () => new UserProfileModel(), cancellationToken);
-            if (choice != null && choice.Value.Equals("Atras", StringComparison.OrdinalIgnoreCase))
+            if(userProfile.especialidad == null)
             {
-                userProfile.Servicios = null;
-                stepContext.Context.Activity.Text = null;
-                await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
-                return await stepContext.ReplaceDialogAsync(nameof(WaterfallDialog), null, cancellationToken);
+                var optionsAnt = (IEnumerable<dynamic>)stepContext.Values["Especialidades"];
+                var choice = (FoundChoice)stepContext.Result;
+                if (choice != null && choice.Value.Equals("Atras", StringComparison.OrdinalIgnoreCase))
+                {
+                    userProfile.Servicios = null;
+                    stepContext.Context.Activity.Text = null;
+                    await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
+                    return await stepContext.ReplaceDialogAsync(nameof(WaterfallDialog), null, cancellationToken);
+                }
+                var selectedOption = optionsAnt.FirstOrDefault(option => option.Name == choice.Value);
+                var dialogState = await _dialogStateAccessor.GetAsync(stepContext.Context, () => new DialogState(), cancellationToken);
+                stepContext.Values["DialogState"] = dialogState;
+                userProfile.especialidad = selectedOption.Id;
             }
-            var selectedOption = optionsAnt.FirstOrDefault(option => option.Name == choice.Value);
-            var dialogState = await _dialogStateAccessor.GetAsync(stepContext.Context, () => new DialogState(), cancellationToken);
-            stepContext.Values["DialogState"] = dialogState;
-            userProfile.especialidad = selectedOption.Id;
             try
             {
                 List<JObject> ScheduleAvailability = await _apiCalls.GetScheduleAvailabilityAsync(userProfile);
@@ -620,14 +629,23 @@ namespace CoreBotTestDD.Dialogs
                         OfficeId = documentType.GetValue("officeID").ToString(),
                         DoctorName = documentType.GetValue("doctorName").ToString()
                     }).Take(5).ToArray();
-                    var choices = options.Select(option => new Choice
+                    var optionsWithBack = options.Concat(new[]
                     {
-                        Value = $"{option.DateTime}{Environment.NewLine}Doctor: {option.DoctorName}{Environment.NewLine}Duración: {option.Duration}"
-                    }).ToList();
+                     new
+                     {
+                         DateTime = "Atras",
+                            UserId = string.Empty,
+                            AppointmentTypeId = string.Empty,
+                         Duration = string.Empty,
+                         OfficeId = string.Empty,
+                         DoctorName = string.Empty
+                      }
+                    }).ToArray();
+
                     var promptOptions = new PromptOptions
                     {
                         Prompt = MessageFactory.Text("Selecciona una fecha para tu cita: " + Environment.NewLine),
-                        Choices = ChoiceFactory.ToChoices(options.Select(option => option.DateTime).ToList()),
+                        Choices = ChoiceFactory.ToChoices(optionsWithBack.Select(option => option.DateTime).ToList()),
                         Style = ListStyle.List
                     };
 
@@ -651,7 +669,13 @@ namespace CoreBotTestDD.Dialogs
             var choice = (FoundChoice)stepContext.Result;
             if (choice != null && choice.Value.Equals("Atras", StringComparison.OrdinalIgnoreCase))
             {
+                List<JObject> especialidades = await _apiCalls.GetEspecialidadAsync(userProfile.Servicios, userProfile.CodeCompany);
+                if(especialidades.Count == 1)
+                {
+                    userProfile.Servicios = null;
+                }
                 userProfile.especialidad = null;
+                stepContext.Context.Activity.Text = null;
                 await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
                 return await stepContext.ReplaceDialogAsync(nameof(WaterfallDialog), null, cancellationToken);
             }
