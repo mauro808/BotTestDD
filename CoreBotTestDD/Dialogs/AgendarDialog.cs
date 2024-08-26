@@ -565,7 +565,7 @@ namespace CoreBotTestDD.Dialogs
                     optionsList.Add(newOption);
                     var promptOptions = new PromptOptions
                     {
-                        Prompt = MessageFactory.Text("Selecciona un servicio:"),
+                        Prompt = MessageFactory.Text("Selecciona una especialidad:"),
                         Choices = ChoiceFactory.ToChoices(optionsList.Select(option => option.Name).ToList()),
                         Style = ListStyle.List
                     };
@@ -715,16 +715,22 @@ namespace CoreBotTestDD.Dialogs
             {
                 await stepContext.Context.SendActivityAsync("Agendando cita...");
                 bool result = await _apiCalls.PostCreateCitaAsync(userProfile, stepContext.Values["DataCita"]);
-                await ResetUserProfile(stepContext);
                 await Task.Delay(3000);
                 if (result == true)
                 {
                     await stepContext.Context.SendActivityAsync("Cita agendada correctamente.");
+                    string preparation = await _apiCalls.GetPreparationAsync(userProfile);
+                    if (preparation != null)
+                    {
+                        await stepContext.Context.SendActivityAsync(preparation);
+                    }
+                    await ResetUserProfile(stepContext);
                     await stepContext.Context.SendActivityAsync("¿Te podemos ayudar en algo mas?");
                     return await stepContext.EndDialogAsync();
                 }
                 else
                 {
+                    await ResetUserProfile(stepContext);
                     await stepContext.Context.SendActivityAsync("Error al generar la cita. Intenta mas tarde.");
                     return await stepContext.EndDialogAsync();
 

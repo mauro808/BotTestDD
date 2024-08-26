@@ -24,6 +24,12 @@ E:\Projects\BotTestDonDoctor\CoreBotTestDD\CoreBotTestDD\obj\Release\netcoreapp3
 E:\Projects\BotTestDonDoctor\CoreBotTestDD\CoreBotTestDD\obj\Release\netcoreapp3.1\PubTmp\Out\DnsClient.dll
 E:\Projects\BotTestDonDoctor\CoreBotTestDD\CoreBotTestDD\obj\Release\netcoreapp3.1\PubTmp\Out\DonDoctor.ConfigurationProvider.Core.dll
 E:\Projects\BotTestDonDoctor\CoreBotTestDD\CoreBotTestDD\obj\Release\netcoreapp3.1\PubTmp\Out\Microsoft.ApplicationInsights.dll
+E:\Projects\BotTestDonDoctor\CoreBotTestDD\CoreBotTestDD\obj\Release\netcoreapp3.1\PubTmp\Out\Microsoft.ApplicationInsights.AspNetCore.dll
+E:\Projects\BotTestDonDoctor\CoreBotTestDD\CoreBotTestDD\obj\Release\netcoreapp3.1\PubTmp\Out\Microsoft.AI.DependencyCollector.dll
+E:\Projects\BotTestDonDoctor\CoreBotTestDD\CoreBotTestDD\obj\Release\netcoreapp3.1\PubTmp\Out\Microsoft.AI.EventCounterCollector.dll
+E:\Projects\BotTestDonDoctor\CoreBotTestDD\CoreBotTestDD\obj\Release\netcoreapp3.1\PubTmp\Out\Microsoft.AI.PerfCounterCollector.dll
+E:\Projects\BotTestDonDoctor\CoreBotTestDD\CoreBotTestDD\obj\Release\netcoreapp3.1\PubTmp\Out\Microsoft.AI.WindowsServer.dll
+E:\Projects\BotTestDonDoctor\CoreBotTestDD\CoreBotTestDD\obj\Release\netcoreapp3.1\PubTmp\Out\Microsoft.AI.ServerTelemetryChannel.dll
 E:\Projects\BotTestDonDoctor\CoreBotTestDD\CoreBotTestDD\obj\Release\netcoreapp3.1\PubTmp\Out\Microsoft.AspNetCore.JsonPatch.dll
 E:\Projects\BotTestDonDoctor\CoreBotTestDD\CoreBotTestDD\obj\Release\netcoreapp3.1\PubTmp\Out\Microsoft.AspNetCore.Mvc.NewtonsoftJson.dll
 E:\Projects\BotTestDonDoctor\CoreBotTestDD\CoreBotTestDD\obj\Release\netcoreapp3.1\PubTmp\Out\Microsoft.AspNetCore.Mvc.Razor.Extensions.dll
@@ -33,8 +39,10 @@ E:\Projects\BotTestDonDoctor\CoreBotTestDD\CoreBotTestDD\obj\Release\netcoreapp3
 E:\Projects\BotTestDonDoctor\CoreBotTestDD\CoreBotTestDD\obj\Release\netcoreapp3.1\PubTmp\Out\Microsoft.Bcl.AsyncInterfaces.dll
 E:\Projects\BotTestDonDoctor\CoreBotTestDD\CoreBotTestDD\obj\Release\netcoreapp3.1\PubTmp\Out\Microsoft.Bot.Builder.dll
 E:\Projects\BotTestDonDoctor\CoreBotTestDD\CoreBotTestDD\obj\Release\netcoreapp3.1\PubTmp\Out\Microsoft.Bot.Builder.AI.Luis.dll
+E:\Projects\BotTestDonDoctor\CoreBotTestDD\CoreBotTestDD\obj\Release\netcoreapp3.1\PubTmp\Out\Microsoft.Bot.Builder.ApplicationInsights.dll
 E:\Projects\BotTestDonDoctor\CoreBotTestDD\CoreBotTestDD\obj\Release\netcoreapp3.1\PubTmp\Out\Microsoft.Bot.Builder.Dialogs.dll
 E:\Projects\BotTestDonDoctor\CoreBotTestDD\CoreBotTestDD\obj\Release\netcoreapp3.1\PubTmp\Out\Microsoft.Bot.Builder.Dialogs.Declarative.dll
+E:\Projects\BotTestDonDoctor\CoreBotTestDD\CoreBotTestDD\obj\Release\netcoreapp3.1\PubTmp\Out\Microsoft.Bot.Builder.Integration.ApplicationInsights.Core.dll
 E:\Projects\BotTestDonDoctor\CoreBotTestDD\CoreBotTestDD\obj\Release\netcoreapp3.1\PubTmp\Out\Microsoft.Bot.Builder.Integration.AspNet.Core.dll
 E:\Projects\BotTestDonDoctor\CoreBotTestDD\CoreBotTestDD\obj\Release\netcoreapp3.1\PubTmp\Out\Microsoft.Bot.Configuration.dll
 E:\Projects\BotTestDonDoctor\CoreBotTestDD\CoreBotTestDD\obj\Release\netcoreapp3.1\PubTmp\Out\Microsoft.Bot.Connector.dll
@@ -56,6 +64,7 @@ E:\Projects\BotTestDonDoctor\CoreBotTestDD\CoreBotTestDD\obj\Release\netcoreapp3
 E:\Projects\BotTestDonDoctor\CoreBotTestDD\CoreBotTestDD\obj\Release\netcoreapp3.1\PubTmp\Out\Microsoft.Extensions.FileProviders.Abstractions.dll
 E:\Projects\BotTestDonDoctor\CoreBotTestDD\CoreBotTestDD\obj\Release\netcoreapp3.1\PubTmp\Out\Microsoft.Extensions.FileProviders.Physical.dll
 E:\Projects\BotTestDonDoctor\CoreBotTestDD\CoreBotTestDD\obj\Release\netcoreapp3.1\PubTmp\Out\Microsoft.Extensions.FileSystemGlobbing.dll
+E:\Projects\BotTestDonDoctor\CoreBotTestDD\CoreBotTestDD\obj\Release\netcoreapp3.1\PubTmp\Out\Microsoft.Extensions.Logging.ApplicationInsights.dll
 E:\Projects\BotTestDonDoctor\CoreBotTestDD\CoreBotTestDD\obj\Release\netcoreapp3.1\PubTmp\Out\Microsoft.Extensions.Primitives.dll
 E:\Projects\BotTestDonDoctor\CoreBotTestDD\CoreBotTestDD\obj\Release\netcoreapp3.1\PubTmp\Out\Microsoft.Identity.Client.dll
 E:\Projects\BotTestDonDoctor\CoreBotTestDD\CoreBotTestDD\obj\Release\netcoreapp3.1\PubTmp\Out\Microsoft.IdentityModel.Abstractions.dll
@@ -94,6 +103,8 @@ E:\Projects\BotTestDonDoctor\CoreBotTestDD\CoreBotTestDD\obj\Release\netcoreapp3
 E:\Projects\BotTestDonDoctor\CoreBotTestDD\CoreBotTestDD\obj\Release\netcoreapp3.1\PubTmp\Out\Serilog.Sinks.PeriodicBatching.dll
 E:\Projects\BotTestDonDoctor\CoreBotTestDD\CoreBotTestDD\obj\Release\netcoreapp3.1\PubTmp\Out\SharpCompress.dll
 E:\Projects\BotTestDonDoctor\CoreBotTestDD\CoreBotTestDD\obj\Release\netcoreapp3.1\PubTmp\Out\System.Configuration.ConfigurationManager.dll
+E:\Projects\BotTestDonDoctor\CoreBotTestDD\CoreBotTestDD\obj\Release\netcoreapp3.1\PubTmp\Out\System.Diagnostics.DiagnosticSource.dll
+E:\Projects\BotTestDonDoctor\CoreBotTestDD\CoreBotTestDD\obj\Release\netcoreapp3.1\PubTmp\Out\System.Diagnostics.PerformanceCounter.dll
 E:\Projects\BotTestDonDoctor\CoreBotTestDD\CoreBotTestDD\obj\Release\netcoreapp3.1\PubTmp\Out\System.Formats.Asn1.dll
 E:\Projects\BotTestDonDoctor\CoreBotTestDD\CoreBotTestDD\obj\Release\netcoreapp3.1\PubTmp\Out\System.IdentityModel.Tokens.Jwt.dll
 E:\Projects\BotTestDonDoctor\CoreBotTestDD\CoreBotTestDD\obj\Release\netcoreapp3.1\PubTmp\Out\System.IO.Pipelines.dll
@@ -116,6 +127,9 @@ E:\Projects\BotTestDonDoctor\CoreBotTestDD\CoreBotTestDD\obj\Release\netcoreapp3
 E:\Projects\BotTestDonDoctor\CoreBotTestDD\CoreBotTestDD\obj\Release\netcoreapp3.1\PubTmp\Out\runtimes\win-arm64\native\sni.dll
 E:\Projects\BotTestDonDoctor\CoreBotTestDD\CoreBotTestDD\obj\Release\netcoreapp3.1\PubTmp\Out\runtimes\win-x64\native\sni.dll
 E:\Projects\BotTestDonDoctor\CoreBotTestDD\CoreBotTestDD\obj\Release\netcoreapp3.1\PubTmp\Out\runtimes\win-x86\native\sni.dll
+E:\Projects\BotTestDonDoctor\CoreBotTestDD\CoreBotTestDD\obj\Release\netcoreapp3.1\PubTmp\Out\runtimes\win\lib\netcoreapp2.0\System.Diagnostics.PerformanceCounter.dll
+E:\Projects\BotTestDonDoctor\CoreBotTestDD\CoreBotTestDD\obj\Release\netcoreapp3.1\PubTmp\Out\runtimes\unix\lib\netcoreapp3.0\System.Drawing.Common.dll
+E:\Projects\BotTestDonDoctor\CoreBotTestDD\CoreBotTestDD\obj\Release\netcoreapp3.1\PubTmp\Out\runtimes\win\lib\netcoreapp3.0\System.Drawing.Common.dll
 E:\Projects\BotTestDonDoctor\CoreBotTestDD\CoreBotTestDD\obj\Release\netcoreapp3.1\PubTmp\Out\runtimes\unix\lib\netcoreapp2.0\System.Runtime.Caching.dll
 E:\Projects\BotTestDonDoctor\CoreBotTestDD\CoreBotTestDD\obj\Release\netcoreapp3.1\PubTmp\Out\runtimes\win\lib\netcoreapp2.0\System.Runtime.Caching.dll
 E:\Projects\BotTestDonDoctor\CoreBotTestDD\CoreBotTestDD\obj\Release\netcoreapp3.1\PubTmp\Out\runtimes\win\lib\netcoreapp3.0\System.Security.Cryptography.Cng.dll

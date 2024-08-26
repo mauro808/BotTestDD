@@ -13,6 +13,8 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using System.Drawing;
 using System.Numerics;
 using DonDoctor.ConfigurationProvider.Core;
+using System.Security.Policy;
+using System.Text.Json.Nodes;
 
 namespace CoreBotTestDD.Services
 {
@@ -26,6 +28,7 @@ namespace CoreBotTestDD.Services
         private readonly string UrlAseguradoraPlanId = "https://api-plans-prod-001.azurewebsites.net/InsurancePlan?InsurancePlanID=1&includeQuotes=true";
         private readonly string UrlCiudadId = "https://api-locations-prod-001.azurewebsites.net/Cities?cityID=";
         private readonly string UrlGenderId = "https://api-genders-test-001.azurewebsites.net/Genders?GenderID=";
+        private readonly string UrlPreparation = "https://api-preparations-test-001.azurewebsites.net/Preparations/Service?id=";
         public async Task<string> AutenticationAsync(string clientCode)
         {
             string url = "https://api-security-test-001.azurewebsites.net/Login";
@@ -791,6 +794,48 @@ namespace CoreBotTestDD.Services
                 }
             }
 
+        }
+
+        public async Task<string> GetPreparationAsync(UserProfileModel userData)
+        {
+            string url = UrlPreparation + userData.Servicios + "&isPublic=false";
+            using (HttpClient client = new HttpClient())
+            {
+                try
+                {
+                    client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", await AutenticationAsync(userData.CodeCompany));
+                    HttpResponseMessage response = await client.GetAsync(url);
+
+                    if (response.IsSuccessStatusCode)
+                    {
+                        if (response.StatusCode.Equals("204"))
+                        {
+                            return null;
+                        }
+                        string jsonResponse = await response.Content.ReadAsStringAsync();
+                        JArray jsonArray;
+                        jsonArray = JArray.Parse(jsonResponse);
+                        if (jsonArray.Count > 0)
+                        {
+                            return jsonArray[0]["name"]?.ToString();
+                        }
+                        else
+                        {
+                            return null;
+                        }
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Error: {response.StatusCode}");
+                        return null;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Excepción: {ex.Message}");
+                    return null;
+                }
+            }
         }
 
     }

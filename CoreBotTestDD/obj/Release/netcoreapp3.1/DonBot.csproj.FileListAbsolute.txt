@@ -140,3 +140,17 @@ E:\Projects\BotTestDonDoctor\CoreBotTestDD\CoreBotTestDD\obj\Release\netcoreapp3
 E:\Projects\BotTestDonDoctor\CoreBotTestDD\CoreBotTestDD\obj\Release\netcoreapp3.1\DonBot.dll
 E:\Projects\BotTestDonDoctor\CoreBotTestDD\CoreBotTestDD\obj\Release\netcoreapp3.1\DonBot.pdb
 E:\Projects\BotTestDonDoctor\CoreBotTestDD\CoreBotTestDD\obj\Release\netcoreapp3.1\DonBot.genruntimeconfig.cache
+E:\Projects\BotTestDonDoctor\CoreBotTestDD\CoreBotTestDD\bin\Release\netcoreapp3.1\Microsoft.ApplicationInsights.AspNetCore.dll
+E:\Projects\BotTestDonDoctor\CoreBotTestDD\CoreBotTestDD\bin\Release\netcoreapp3.1\Microsoft.AI.DependencyCollector.dll
+E:\Projects\BotTestDonDoctor\CoreBotTestDD\CoreBotTestDD\bin\Release\netcoreapp3.1\Microsoft.AI.EventCounterCollector.dll
+E:\Projects\BotTestDonDoctor\CoreBotTestDD\CoreBotTestDD\bin\Release\netcoreapp3.1\Microsoft.AI.PerfCounterCollector.dll
+E:\Projects\BotTestDonDoctor\CoreBotTestDD\CoreBotTestDD\bin\Release\netcoreapp3.1\Microsoft.AI.WindowsServer.dll
+E:\Projects\BotTestDonDoctor\CoreBotTestDD\CoreBotTestDD\bin\Release\netcoreapp3.1\Microsoft.AI.ServerTelemetryChannel.dll
+E:\Projects\BotTestDonDoctor\CoreBotTestDD\CoreBotTestDD\bin\Release\netcoreapp3.1\Microsoft.Bot.Builder.ApplicationInsights.dll
+E:\Projects\BotTestDonDoctor\CoreBotTestDD\CoreBotTestDD\bin\Release\netcoreapp3.1\Microsoft.Bot.Builder.Integration.ApplicationInsights.Core.dll
+E:\Projects\BotTestDonDoctor\CoreBotTestDD\CoreBotTestDD\bin\Release\netcoreapp3.1\Microsoft.Extensions.Logging.ApplicationInsights.dll
+E:\Projects\BotTestDonDoctor\CoreBotTestDD\CoreBotTestDD\bin\Release\netcoreapp3.1\System.Diagnostics.DiagnosticSource.dll
+E:\Projects\BotTestDonDoctor\CoreBotTestDD\CoreBotTestDD\bin\Release\netcoreapp3.1\System.Diagnostics.PerformanceCounter.dll
+E:\Projects\BotTestDonDoctor\CoreBotTestDD\CoreBotTestDD\bin\Release\netcoreapp3.1\runtimes\win\lib\netcoreapp2.0\System.Diagnostics.PerformanceCounter.dll
+E:\Projects\BotTestDonDoctor\CoreBotTestDD\CoreBotTestDD\bin\Release\netcoreapp3.1\runtimes\unix\lib\netcoreapp3.0\System.Drawing.Common.dll
+E:\Projects\BotTestDonDoctor\CoreBotTestDD\CoreBotTestDD\bin\Release\netcoreapp3.1\runtimes\win\lib\netcoreapp3.0\System.Drawing.Common.dll
