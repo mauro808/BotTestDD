@@ -671,6 +671,13 @@ namespace DonBot.Dialogs
                     {
                         servicios.Add(servicio.Value<string>("name"));
                     }
+                    if (servicios.Count == 1)
+                    {
+                        userProfile.City = ciudades[0]["cityID"].ToString();
+                        await _userStateAccessor.SetAsync(stepContext.Context, userProfile, cancellationToken);
+                        await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
+                        return await stepContext.NextAsync();
+                    }
                     var options = ciudades.Select(documentType => new
                     {
                         Id = documentType["cityID"].ToString(),
@@ -718,7 +725,7 @@ namespace DonBot.Dialogs
             {
                 if (choice != null && choice.Value.Equals("Atras", StringComparison.OrdinalIgnoreCase))
                 {
-                    userProfile.Affiliation = null;
+                    userProfile.City = null;
                     stepContext.Context.Activity.Text = null;
                     await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
                     return await stepContext.ReplaceDialogAsync(nameof(WaterfallDialog), null, cancellationToken);

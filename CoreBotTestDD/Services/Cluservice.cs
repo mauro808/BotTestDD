@@ -5,6 +5,7 @@ using System;
 using CoreBotTestDD.Models;
 using Newtonsoft.Json.Linq;
 using Microsoft.AspNetCore.DataProtection.KeyManagement;
+using System.Globalization;
 
 namespace CoreBotTestDD.Services
 {
@@ -21,6 +22,7 @@ namespace CoreBotTestDD.Services
 
         public async Task<string> AnalyzeTextAsync(string text)
         {
+            text = RemoveCommasAndAccents(text);
             try
             {
                 // Configura la solicitud HTTP POST
@@ -82,6 +84,7 @@ namespace CoreBotTestDD.Services
 
         public async Task<string> AnalyzeTextEntitiesAsync(string text)
         {
+            text = RemoveCommasAndAccents(text);
             try
             {
                 // Configura la solicitud HTTP POST
@@ -166,6 +169,35 @@ namespace CoreBotTestDD.Services
                 // Manejo de otras excepciones
                 throw new Exception("Error al hacer la solicitud", ex);
             }
+        }
+
+        static string RemoveCommasAndAccents(string text)
+        {
+            if (text == null)
+                throw new ArgumentNullException(nameof(text));
+
+            // Eliminar comas
+            string withoutCommas = text.Replace(",", "");
+
+            // Normalizar el texto a forma de descomposición canónica
+            string normalized = withoutCommas.Normalize(NormalizationForm.FormD);
+
+            // Crear un StringBuilder para construir el texto resultante sin acentos
+            StringBuilder builder = new StringBuilder();
+
+            // Recorrer cada carácter en el texto normalizado
+            foreach (char c in normalized)
+            {
+                // Agregar solo caracteres que no sean marcas de acento
+                UnicodeCategory category = CharUnicodeInfo.GetUnicodeCategory(c);
+                if (category != UnicodeCategory.NonSpacingMark)
+                {
+                    builder.Append(c);
+                }
+            }
+
+            // Devolver el texto final sin comas y sin acentos
+            return builder.ToString().Normalize(NormalizationForm.FormC);
         }
     }
 }

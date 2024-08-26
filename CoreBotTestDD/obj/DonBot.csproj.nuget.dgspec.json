@@ -58,6 +58,10 @@
               "target": "Package",
               "version": "[1.0.13, )"
             },
+            "Microsoft.ApplicationInsights": {
+              "target": "Package",
+              "version": "[2.22.0, )"
+            },
             "Microsoft.AspNetCore.Mvc.NewtonsoftJson": {
               "target": "Package",
               "version": "[3.1.1, )"
@@ -67,6 +71,10 @@
               "version": "[4.22.0, )"
             },
             "Microsoft.Bot.Builder.Dialogs": {
+              "target": "Package",
+              "version": "[4.22.0, )"
+            },
+            "Microsoft.Bot.Builder.Integration.ApplicationInsights.Core": {
               "target": "Package",
               "version": "[4.22.0, )"
             },

@@ -2,6 +2,7 @@
 
 using CoreBotTestDD.Bots;
 using Microsoft.Bot.Builder;
+using Microsoft.Bot.Builder.Integration.ApplicationInsights.Core;
 using Microsoft.Bot.Builder.Integration.AspNet.Core;
 using Microsoft.Bot.Builder.TraceExtensions;
 using Microsoft.Bot.Connector.Authentication;
@@ -13,9 +14,10 @@ namespace CoreBotTestDD
 {
     public class AdapterWithErrorHandler : CloudAdapter
     {
-        public AdapterWithErrorHandler(BotFrameworkAuthentication auth, ILogger<IBotFrameworkHttpAdapter> logger, InactivityMiddleware inactivityMiddleware, ConversationState conversationState = default)
+        public AdapterWithErrorHandler(BotFrameworkAuthentication auth, ILogger<IBotFrameworkHttpAdapter> logger, InactivityMiddleware inactivityMiddleware, TelemetryInitializerMiddleware telemetryInitializerMiddleware , ConversationState conversationState = default)
             : base(auth, logger)
         {
+            //Use(telemetryInitializerMiddleware);
             Use(inactivityMiddleware);
             OnTurnError = async (turnContext, exception) =>
             {

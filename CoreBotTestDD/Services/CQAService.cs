@@ -5,6 +5,7 @@ using System.Text;
 using System;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using DonBot.Models;
 
 namespace CoreBotTestDD.Services
 {
@@ -19,7 +20,7 @@ namespace CoreBotTestDD.Services
             this.ServiceUrl = appConfiguration.ServiceUrl;
         }
 
-        public async Task<string> AnalyzeQuestionAsync(string text)
+        public async Task<MessageRequestQNA> AnalyzeQuestionAsync(string text)
         {
             try
             {
@@ -54,8 +55,19 @@ namespace CoreBotTestDD.Services
                         string jsonResponse = await response.Content.ReadAsStringAsync();
                         JObject jsonRes = JObject.Parse(jsonResponse);
                         var firstAnswer = jsonRes["answers"][0];
-                        string answer = firstAnswer["answer"].ToString();
-                        return answer;
+                        MessageRequestQNA QuestionAns = new();
+                        var QuestionId = firstAnswer["id"].ToString();
+                        if(QuestionId == "-1")
+                        {
+                            return null;
+                        }
+                        QuestionAns.text = firstAnswer["answer"].ToString();
+                        JToken metadata = firstAnswer["metadata"]?["state"];
+                        if (metadata != null)
+                        {
+                            QuestionAns.metadata = firstAnswer["metadata"]?["state"].ToString();
+                        }
+                        return QuestionAns;
                     }
                     else
                     {

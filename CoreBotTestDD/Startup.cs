@@ -10,6 +10,9 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Bot.Builder;
 using Microsoft.Bot.Builder.Integration.AspNet.Core;
+using Microsoft.ApplicationInsights.Extensibility;
+using Microsoft.Bot.Builder.ApplicationInsights;
+using Microsoft.Bot.Builder.Integration.ApplicationInsights.Core;
 using Microsoft.Bot.Connector.Authentication;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -33,13 +36,20 @@ namespace CoreBotTestDD
 
             // Create the Bot Framework Authentication to be used with the Bot Adapter.
             services.AddSingleton<InactivityMiddleware>();
+            services.AddApplicationInsightsTelemetry();
+            services.AddSingleton<IBotTelemetryClient, BotTelemetryClient>();
+            services.AddSingleton<ITelemetryInitializer, OperationCorrelationTelemetryInitializer>();
+            services.AddSingleton<ITelemetryInitializer, TelemetryBotIdInitializer>();
+            services.AddSingleton<TelemetryInitializerMiddleware>();
+            services.AddSingleton<TelemetryLoggerMiddleware>();
             services.AddSingleton<IBotFrameworkHttpAdapter>(sp =>
             {
                 var auth = sp.GetRequiredService<BotFrameworkAuthentication>();
                 var logger = sp.GetRequiredService<ILogger<AdapterWithErrorHandler>>();
                 var inactivityMiddleware = sp.GetRequiredService<InactivityMiddleware>();
                 var conversationState = sp.GetRequiredService<ConversationState>();
-                return new AdapterWithErrorHandler(auth, logger, inactivityMiddleware, conversationState);
+                var telemetryInsight = sp.GetRequiredService<TelemetryInitializerMiddleware>();
+                return new AdapterWithErrorHandler(auth, logger, inactivityMiddleware, telemetryInsight, conversationState);
             });
             services.AddSingleton<BotFrameworkAuthentication, ConfigurationBotFrameworkAuthentication>();
 
