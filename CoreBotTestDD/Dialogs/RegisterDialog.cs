@@ -82,7 +82,7 @@ namespace DonBot.Dialogs
             }
             var choices = new List<Choice>
         {
-            new Choice { Value = "Sí" },
+            new Choice { Value = "Si" },
             new Choice { Value = "No" }
         };
             var promptOptions = new PromptOptions
@@ -143,7 +143,7 @@ namespace DonBot.Dialogs
                 await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
                 return await stepContext.NextAsync();
             }
-            await stepContext.Context.SendActivityAsync("¿Cual es el nombre del paciente SIN APELLIDOS? Escribe unicamente el primer nombre, Ejemplo: Juan, Maria, Laura");
+            await stepContext.Context.SendActivityAsync("¿Cual es el nombre del paciente?. Sin apellidos. Escribe unicamente el primer nombre, Ejemplo: Juan, Maria, Laura");
             await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
             return new DialogTurnResult(DialogTurnStatus.Waiting);
         }

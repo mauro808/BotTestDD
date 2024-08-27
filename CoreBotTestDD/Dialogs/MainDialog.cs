@@ -69,7 +69,7 @@ namespace CoreBotTestDD.Dialogs
                 //userProfile.CodeCompany = await _clientMessages.GetClientSha("whatsapp:+573247496430");
                 //await stepContext.Context.SendActivityAsync(MessageFactory.Text(await _clientMessages.GetClientMessages("Bienvenida", userProfile.CodeCompany)));
                 //await stepContext.Context.SendActivityAsync(MessageFactory.Text(await _clientMessages.GetClientMessages("Tratamiento datos personales", userProfile.CodeCompany)));
-                await stepContext.Context.SendActivityAsync(MessageFactory.Text("Hola! Soy el asistente virtual de Mederi. Al continuar, aceptas nuestros términos y condiciones [URL](http://fundacionhomi.org/.co/). Te puedo ayudar a agendar y/o gestionar tus citas y pedir información  ¿En qué puedo ayudarte hoy?"));
+                await stepContext.Context.SendActivityAsync(MessageFactory.Text("Hola! Soy el asistente virtual de Mederi. Al continuar, aceptas nuestros términos y condiciones [URL](http://fundacionhomi.org/.co/). Te puedo ayudar a agendar y/o gestionar tus citas y pedir información. ¿Que deseas hacer? \n\n1-Agendar\n\n2- Obtener información"));
                 userProfile.IsNewUser = false;
             }
             await _userStateAccessor.SetAsync(stepContext.Context, userProfile, cancellationToken);
@@ -86,6 +86,15 @@ namespace CoreBotTestDD.Dialogs
         {
             var userProfile = await _userStateAccessor.GetAsync(stepContext.Context, () => new UserProfileModel { IsNewUser = true }, cancellationToken);
             var userStateAccessors = stepContext.Context.TurnState.Get<UserState>();
+            if(stepContext.Context.Activity.Text == "1")
+            {
+                await stepContext.Context.SendActivityAsync("Muy bien, vamos a agendar una cita.", cancellationToken: cancellationToken);
+                return await stepContext.BeginDialogAsync(nameof(AgendarDialog), null, cancellationToken);
+            }else if(stepContext.Context.Activity.Text == "2" || stepContext.Context.Activity.Text.Equals("obtener informacion", StringComparison.OrdinalIgnoreCase))
+            {
+                await stepContext.Context.SendActivityAsync("Perfecto. ¿Que informacion necesitas? Si tengo respuesta para ello te dare la informacion.");
+                return await stepContext.NextAsync(null, cancellationToken);
+            }
             var responseQna = await _cqaService.AnalyzeQuestionAsync(stepContext.Context.Activity.Text.ToString());
             if (responseQna != null)
             {
