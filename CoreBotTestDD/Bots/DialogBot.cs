@@ -9,6 +9,8 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using CoreBotTestDD.Models;
+using System.Configuration;
+using Microsoft.Extensions.Configuration;
 
 namespace CoreBotTestDD.Bots
 {
@@ -27,9 +29,13 @@ namespace CoreBotTestDD.Bots
         private readonly UserState _userState;
         private readonly IStatePropertyAccessor<UserProfileModel> _userProfileAccessor;
         protected readonly ILogger Logger;
+        protected readonly int ExpireAfterSeconds;
+        protected readonly IStatePropertyAccessor<DateTime> LastAccessedTimeProperty;
+        protected readonly IStatePropertyAccessor<DialogState> DialogStateProperty;
+
 #pragma warning restore SA1401 // Fields should be private
 
-        public DialogBot(ConversationState conversationState, UserState userState, T dialog, ILogger<DialogBot<T>> logger)
+        public DialogBot(IConfiguration configuration, ConversationState conversationState, UserState userState, T dialog, ILogger<DialogBot<T>> logger)
         {
             ConversationState = conversationState;
             UserState = userState;
@@ -37,10 +43,20 @@ namespace CoreBotTestDD.Bots
             Logger = logger;
             _userState = userState;
             _userProfileAccessor = _userState.CreateProperty<UserProfileModel>("UserProfile");
+            ExpireAfterSeconds = configuration.GetValue<int>("ExpireAfterSeconds");
+            DialogStateProperty = ConversationState.CreateProperty<DialogState>(nameof(DialogState));
+            LastAccessedTimeProperty = ConversationState.CreateProperty<DateTime>(nameof(LastAccessedTimeProperty));
         }
         public override async Task OnTurnAsync(ITurnContext turnContext, CancellationToken cancellationToken = default(CancellationToken))
         {
+            var lastAccess = await LastAccessedTimeProperty.GetAsync(turnContext, () => DateTime.UtcNow, cancellationToken).ConfigureAwait(false);
+            if ((DateTime.UtcNow - lastAccess) >= TimeSpan.FromSeconds(ExpireAfterSeconds))
+            {
+                await UserState.ClearStateAsync(turnContext).ConfigureAwait(false);
+                await ConversationState.ClearStateAsync(turnContext, cancellationToken).ConfigureAwait(false);
+            }
             await base.OnTurnAsync(turnContext, cancellationToken);
+            await LastAccessedTimeProperty.SetAsync(turnContext, DateTime.UtcNow, cancellationToken).ConfigureAwait(false);
             await ConversationState.SaveChangesAsync(turnContext, false, cancellationToken);
             await UserState.SaveChangesAsync(turnContext, false, cancellationToken);
         }

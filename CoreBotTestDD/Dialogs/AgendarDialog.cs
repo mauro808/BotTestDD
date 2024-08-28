@@ -118,7 +118,7 @@ namespace CoreBotTestDD.Dialogs
                         var previousPageOption = new { Id = "PaginaAnterior", Name = "Página Anterior" };
                         optionsList.Add(previousPageOption);
                     }
-                    var backOption = new { Id = "Atras", Name = "Atrás" };
+                    var backOption = new { Id = "Atras", Name = "Atras" };
                     optionsList.Add(backOption);
 
                     var promptOptions = new PromptOptions
@@ -219,6 +219,7 @@ namespace CoreBotTestDD.Dialogs
                 {
                     userProfile.UserId = userData["id"]?.ToString();
                     userProfile.Name = userData["name"]?.ToString();
+                    userProfile.Aseguradora = userData["insurancePlan"]?["id"]?.ToString();
                     await stepContext.Context.SendActivityAsync("Bienvenido " + userProfile.Name);
                 }
                 catch (Exception ex)
@@ -234,7 +235,7 @@ namespace CoreBotTestDD.Dialogs
                 await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
                 return await stepContext.NextAsync();
             }
-            await stepContext.Context.SendActivityAsync("¿Con que entidad de salud deseas solicitar la cita? (Ejemplo: Sura) Escribe atras si quieres cambiar tu informacion anterior. ");
+            await stepContext.Context.SendActivityAsync("Tienes asociado el convenio "+userProfile.Aseguradora);
             await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
             return new DialogTurnResult(DialogTurnStatus.Waiting);
         }
