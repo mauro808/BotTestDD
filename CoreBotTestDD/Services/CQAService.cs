@@ -30,7 +30,7 @@ namespace CoreBotTestDD.Services
                     top = 3,
                     question = text,
                     includeUnstructuredSources = true,
-                    confidenceScoreThreshold = "0.2",
+                    confidenceScoreThreshold = "0.4",
                     answerSpanRequest = new AnswerSpanRequest
                     {
                         enable = true,

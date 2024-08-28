@@ -113,7 +113,7 @@ namespace CoreBotTestDD.Dialogs
                     await stepContext.Context.SendActivityAsync("Muy bien, vamos a agendar una cita.", cancellationToken: cancellationToken);
                     return await stepContext.BeginDialogAsync(nameof(AgendarDialog), null, cancellationToken);
                 }
-                else if (IntentScore == "No")
+                else if (IntentScore == "Negacion")
                 {
                     await stepContext.Context.SendActivityAsync("Fue un placer atenderte. Estare aqui para ayudarte en nuestra proxima interaccion.", cancellationToken: cancellationToken);
                     userProfile.IsNewUser = true;
