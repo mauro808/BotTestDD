@@ -13,6 +13,7 @@ using System.Threading;
 using System.Collections.Generic;
 using System.Linq;
 using DonBot.Utilities;
+using System.Diagnostics;
 
 namespace DonBot.Dialogs
 {
@@ -63,7 +64,8 @@ namespace DonBot.Dialogs
                 HandlePatientTypeAsync,
                 GetAddressAsync,
                 GetConfirmationAsync,
-                HandleCreateUserSelectionAsync
+                HandleCreateUserSelectionAsync,
+                HandleCorrectionDataAsync
             };
 
             AddDialog(new WaterfallDialog(nameof(WaterfallDialog), waterfallSteps));
@@ -851,6 +853,10 @@ namespace DonBot.Dialogs
         private async Task<DialogTurnResult> GetConfirmationAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
         {
             var userProfile = await _userStateAccessor.GetAsync(stepContext.Context, () => new UserProfileModel(), cancellationToken);
+            if(userProfile.dataCorrection == true)
+            {
+                return await stepContext.NextAsync();
+            }
             if (stepContext.Context.Activity.Text != null && stepContext.Context.Activity.Text.ToString().Equals("Atras", StringComparison.OrdinalIgnoreCase))
             {
                 userProfile.PatientType = null;
@@ -864,7 +870,9 @@ namespace DonBot.Dialogs
             var choices = new List<Choice>
         {
             new Choice { Value = "Si" },
-            new Choice { Value = "No" }
+            new Choice { Value = "No" },
+            new Choice { Value = "Corregir datos"},
+            new Choice { Value = "Cancelar"}
         };
             var promptOptions = new PromptOptions
             {
@@ -881,12 +889,52 @@ namespace DonBot.Dialogs
         {
             var userProfile = await _userStateAccessor.GetAsync(stepContext.Context, () => new UserProfileModel(), cancellationToken);
             var choice = (FoundChoice)stepContext.Result;
-            if (choice.Value != null && choice.Value.Equals("Atras", StringComparison.OrdinalIgnoreCase))
+            if (choice.Value != null && choice.Value.Equals("Atras", StringComparison.OrdinalIgnoreCase) && userProfile.dataCorrection == false)
             {
                 stepContext.Context.Activity.Text = null;
                 await _conversationState.SaveChangesAsync(stepContext.Context);
                 await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
                 return await stepContext.ReplaceDialogAsync(nameof(WaterfallDialog), null, cancellationToken);
+            }
+            else if (choice.Value != null && choice.Value.Equals("Cancelar", StringComparison.OrdinalIgnoreCase))
+            {
+                await stepContext.Context.SendActivityAsync("Proceso cancelado.");
+                await stepContext.Context.SendActivityAsync("¿Te podemos ayudar en algo mas?");
+                var cancellationReason = new { Reason = DialogReason.CancelCalled };
+                await stepContext.CancelAllDialogsAsync(cancellationToken);
+                await ResetUserProfile(stepContext, cancellationToken);
+                return await stepContext.EndDialogAsync(cancellationReason, cancellationToken);
+            }
+            else if ((choice.Value != null && choice.Value.Equals("Corregir datos", StringComparison.OrdinalIgnoreCase)))
+                 {
+                var choices = new List<Choice>
+                 {
+                 new Choice { Value = "Documento" },
+                 new Choice { Value = "Nombre" },
+                 new Choice { Value = "Apellido"},
+                 new Choice { Value = "Telefono"},
+                 new Choice { Value = "Fecha de nacimiento"},
+                 new Choice { Value = "Genero"},
+                 new Choice { Value = "Correo"},
+                 new Choice { Value = "Aseguradora"},
+                 new Choice { Value = "Plan de aseguradora"},
+                 new Choice { Value = "Estado civil"},
+                 new Choice { Value = "Tipo de afiliacion"},
+                 new Choice { Value = "Ciudad"},
+                 new Choice { Value = "Tipo de paciente"},
+                 new Choice { Value = "Direccion"},
+                 new Choice { Value = "Atras"},
+                };
+                userProfile.dataCorrection = true;
+                var promptOptions = new PromptOptions
+                {
+                    Prompt = MessageFactory.Text("¿Que dato deseas corregir?"),
+                    Choices = choices,
+                    Style = ListStyle.List
+                };
+                stepContext.Values["Choice"] = choices;
+                await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
+                return await stepContext.PromptAsync(nameof(ChoicePrompt), promptOptions, cancellationToken);
             }
             else if (choice.Value.Equals("Si", StringComparison.OrdinalIgnoreCase))
             {
@@ -924,6 +972,89 @@ namespace DonBot.Dialogs
                 await stepContext.CancelAllDialogsAsync(cancellationToken);
                 await ResetUserProfile(stepContext, cancellationToken);
                 return await stepContext.EndDialogAsync(cancellationReason, cancellationToken);
+            }
+        }
+
+        private async Task<DialogTurnResult> HandleCorrectionDataAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
+        {
+            var userProfile = await _userStateAccessor.GetAsync(stepContext.Context, () => new UserProfileModel(), cancellationToken);
+            var choice = (FoundChoice)stepContext.Result;
+            if (userProfile.dataCorrection == true)
+            {
+                var options = (IEnumerable<dynamic>)stepContext.Values["Choice"];
+                var selectedOption = options.FirstOrDefault(option => option.Value == choice.Value);
+                if (selectedOption != null)
+                {
+                    if (selectedOption != null && selectedOption.Value.Equals("Atras", StringComparison.OrdinalIgnoreCase))
+                    {
+                        userProfile.dataCorrection = false;
+                        stepContext.Context.Activity.Text = null;
+                        await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
+                        return await stepContext.ReplaceDialogAsync(nameof(WaterfallDialog), null, cancellationToken);
+                    }
+                    userProfile.dataCorrection = false;
+                    switch (selectedOption.Value)
+                    {
+                        case "Documento":
+                            userProfile.DocumentType = null;
+                            userProfile.DocumentId = null;
+                            break;
+                        case "Nombre":
+                            userProfile.Name = null;
+                            break;
+                        case "Apellido":
+                            userProfile.LastName = null;
+                            break;
+                        case "Telefono":
+                            userProfile.Phone = null;
+                            break;
+                        case "Fecha de nacimiento":
+                            userProfile.birthdate = null;
+                            break;
+                        case "Genero":
+                            userProfile.Gender = null;
+                            break;
+                        case "Correo":
+                            userProfile.Email = null;
+                            break;
+                        case "Aseguradora":
+                            userProfile.Aseguradora = null;
+                            break;
+                        case "Plan de aseguradora":
+                            userProfile.PlanAseguradora = null;
+                            break;
+                        case "Estado civil":
+                            userProfile.MaritalStatus = null;
+                            break;
+                        case "Tipo de afiliacion":
+                            userProfile.Affiliation = null;
+                            break;
+                        case "Ciudad":
+                            userProfile.City = null;
+                            break;
+                        case "Tipo de paciente":
+                            userProfile.PatientType = null;
+                            break;
+                        case "Direccion":
+                            userProfile.Address = null;
+                            break;
+                        case null:
+                            userProfile.dataCorrection = true;
+                            break;
+                    }
+                    await _userStateAccessor.SetAsync(stepContext.Context, userProfile, cancellationToken);
+                    await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
+                    return await stepContext.ReplaceDialogAsync(nameof(WaterfallDialog), null, cancellationToken);
+                }
+                else
+                {
+                    return await stepContext.EndDialogAsync();
+                }
+            }
+            else
+            {
+                await stepContext.Context.SendActivityAsync("Opción seleccionada no válida.", cancellationToken: cancellationToken);
+                return await stepContext.EndDialogAsync();
             }
         }
 

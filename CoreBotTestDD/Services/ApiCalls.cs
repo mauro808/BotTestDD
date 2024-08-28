@@ -838,5 +838,39 @@ namespace CoreBotTestDD.Services
             }
         }
 
+        public async Task<List<JObject>> GetDoctorListAsync(string clientCode, string DoctorName)
+        {
+            string ServicesEndpoint = "https://api-users-test-001.azurewebsites.net/User/GetByName?name="+ DoctorName;
+            try
+            {
+                using (HttpClient client = new HttpClient())
+                {
+                    client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", await AutenticationAsync(clientCode));
+                    HttpResponseMessage response = await client.GetAsync(ServicesEndpoint);
+
+                    // Maneja la respuesta del servicio
+                    if (response.IsSuccessStatusCode)
+                    {
+                        string data = await response.Content.ReadAsStringAsync();
+                        return JsonConvert.DeserializeObject<List<JObject>>(data);
+                    }
+                    else
+                    {
+                        throw new Exception($"Error al hacer la solicitud: {response.StatusCode}");
+                    }
+                }
+            }
+            catch (HttpRequestException ex)
+            {
+                // Manejo de errores de red
+                throw new Exception("Error de red al hacer la solicitud HTTP", ex);
+            }
+            catch (Exception ex)
+            {
+                // Manejo de otras excepciones
+                throw new Exception("Error al hacer la solicitud", ex);
+            }
+        }
+
     }
     }

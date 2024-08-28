@@ -14,6 +14,8 @@ namespace CoreBotTestDD.Models
 
         public int CurrentPage { get; set; } = 0;
 
+        public string DoctorId {  get; set; }
+
         public bool IsNewUser { get; set; }
 
         public bool SaveData { get; set; }
@@ -50,6 +52,8 @@ namespace CoreBotTestDD.Models
 
         public string Conversation { get; set; }
         public int Age { get; set; }
+
+        public bool dataCorrection {  get; set; }
 
         public UserState State { get; set; }
 
