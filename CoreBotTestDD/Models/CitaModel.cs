@@ -20,5 +20,7 @@ namespace CoreBotTestDD.Models
 
         public string City { get; set; }
 
+        public string UserID { get; set; }
+
     }
 }

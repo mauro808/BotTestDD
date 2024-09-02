@@ -10,11 +10,17 @@ namespace CoreBotTestDD.Models
 
         public string CodeCompany { get; set; }
 
+        public bool InsuranceInclude { get; set; } 
+
         public bool Choice { get; set; }
+
+        public string TypeConsult { get; set; } 
 
         public int CurrentPage { get; set; } = 0;
 
         public string DoctorId {  get; set; }
+
+        public string DoctorName {  get; set; }
 
         public bool IsNewUser { get; set; }
 

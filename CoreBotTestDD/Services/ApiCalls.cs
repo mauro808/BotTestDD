@@ -15,6 +15,7 @@ using System.Numerics;
 using DonDoctor.ConfigurationProvider.Core;
 using System.Security.Policy;
 using System.Text.Json.Nodes;
+using System.Linq;
 
 namespace CoreBotTestDD.Services
 {
@@ -449,6 +450,44 @@ namespace CoreBotTestDD.Services
             }
         }
 
+        public async Task<List<JObject>> GetServicesByDoctorAsync(string text, string clientCode)
+        {
+            string ServicesEndpoint = "https://api-services-test-001.azurewebsites.net/Services/GetFilters?userId=" + text;
+            try
+            {
+
+                using (HttpClient client = new HttpClient())
+                {
+                    client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", await AutenticationAsync(clientCode));
+                    HttpResponseMessage response = await client.GetAsync(ServicesEndpoint);
+
+                    // Maneja la respuesta del servicio
+                    if (response.IsSuccessStatusCode)
+                    {
+                        string data = await response.Content.ReadAsStringAsync();
+                        List<JObject> jsonObjectList = JsonConvert.DeserializeObject<List<JObject>>(data);
+                        List<JObject> filteredList = jsonObjectList.Where(obj => obj["hidden"]?.ToObject<bool>() == false)
+                        .ToList();
+                        return filteredList;
+                    }
+                    else
+                    {
+                        throw new Exception($"Error al hacer la solicitud: {response.StatusCode}");
+                    }
+                }
+            }
+            catch (HttpRequestException ex)
+            {
+                // Manejo de errores de red
+                throw new Exception("Error de red al hacer la solicitud HTTP", ex);
+            }
+            catch (Exception ex)
+            {
+                // Manejo de otras excepciones
+                throw new Exception("Error al hacer la solicitud", ex);
+            }
+        }
+
         public async Task<List<JObject>> GetEspecialidadAsync(string ServiceId, string clientCode)
         {
             string url = "https://api-specialities-test-001.azurewebsites.net/Specialties/Service?serviceid=" + ServiceId;
@@ -527,6 +566,51 @@ namespace CoreBotTestDD.Services
 
         }
 
+        public async Task<List<JObject>> GetScheduleAvailabilityByDoctorAsync(UserProfileModel userProfile)
+        {
+            var baseUrl = "https://api-schedules-test-001.azurewebsites.net/ScheduleAvailability";
+            var query = new List<string>
+                {
+                    $"size=30",
+                    $"page=0",
+                    $"planId={userProfile.PlanAseguradora}",
+                    $"serviceId={userProfile.Servicios}",
+                    $"specialtyId={userProfile.especialidad}",
+                    $"doctorId={userProfile.DoctorId}",
+                    $"available=true"
+                };
+            var fullUrl = $"{baseUrl}?{string.Join("&", query)}";
+            using (HttpClient client = new HttpClient())
+            {
+                try
+                {
+                    client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", await AutenticationAsync(userProfile.CodeCompany));
+                    HttpResponseMessage response = await client.GetAsync(fullUrl);
+
+                    if (response.IsSuccessStatusCode)
+                    {
+                        if (response.StatusCode.Equals("204"))
+                        {
+                            return null;
+                        }
+                        string jsonResponse = await response.Content.ReadAsStringAsync();
+                        return JsonConvert.DeserializeObject<List<JObject>>(jsonResponse);
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Error: {response.StatusCode}");
+                        return null;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Excepción: {ex.Message}");
+                    return null;
+                }
+            }
+
+        }
+
         public async Task<bool> PostCreateCitaAsync(UserProfileModel userProfile, object data)
         {
             var url = "https://api-appointments-test-001.azurewebsites.net/Appointments";
@@ -537,14 +621,14 @@ namespace CoreBotTestDD.Services
             var userIdProp = data.GetType().GetProperty("UserId");
             var officeIdProp = data.GetType().GetProperty("OfficeId");
             string appointmentTypeIdStr = appointmentTypeIdProp?.GetValue(data) as string;
-            string userIdStr = userIdProp?.GetValue(data) as string;
+            string DoctorId = userIdProp?.GetValue(data) as string;
             string officeIdStr = officeIdProp?.GetValue(data) as string;
             if (!int.TryParse(appointmentTypeIdStr, out int appointmentTypeId))
             {
                 throw new ArgumentException("AppointmentTypeId no es un entero válido.");
             }
 
-            if (!int.TryParse(userIdStr, out int userId))
+            if (!int.TryParse(DoctorId, out int DoctorID))
             {
                 throw new ArgumentException("UserId no es un entero válido.");
             }
@@ -563,7 +647,7 @@ namespace CoreBotTestDD.Services
                         AppointmentTypeID = appointmentTypeId,
                         UserID = int.Parse(userProfile.UserId),
                         InsuranceID = int.Parse(userProfile.Aseguradora),
-                        DoctorID = userId,
+                        DoctorId = DoctorID,
                         ServiceID = int.Parse(userProfile.Servicios),
                         DateFrom = dateTime,
                         To = newDateTime.ToString("HH:mm:ss tt"),
@@ -700,6 +784,43 @@ namespace CoreBotTestDD.Services
                         string jsonResponse = await response.Content.ReadAsStringAsync();
                         JObject data = JsonConvert.DeserializeObject<JObject>(jsonResponse);
                         return data["name"]?.ToString();
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Error: {response.StatusCode}");
+                        return null;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Excepción: {ex.Message}");
+                    return null;
+                }
+            }
+
+        }
+
+        public async Task<string> GetInsurancePlanByIdAsync(string clientCode, string Id)
+        {
+            string url;
+            url = "https://api-plans-prod-001.azurewebsites.net/InsurancePlan?InsurancePlanID=" + Id + "&includeQuotes=true";
+            using (HttpClient client = new HttpClient())
+            {
+                try
+                {
+                    client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", await AutenticationAsync(clientCode));
+                    HttpResponseMessage response = await client.GetAsync(url);
+
+                    if (response.IsSuccessStatusCode)
+                    {
+                        if (response.StatusCode.Equals("204"))
+                        {
+                            return null;
+                        }
+                        string jsonResponse = await response.Content.ReadAsStringAsync();
+                        JObject data = JsonConvert.DeserializeObject<JObject>(jsonResponse);
+                        string insurance = data["insurance"]?["id"].ToString();
+                        return insurance;
                     }
                     else
                     {

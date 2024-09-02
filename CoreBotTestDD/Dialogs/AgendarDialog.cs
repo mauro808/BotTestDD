@@ -29,11 +29,14 @@ namespace CoreBotTestDD.Dialogs
         private readonly CLUService _cluService;
         private readonly ConversationState _conversationState;
         private readonly RegisterDialog _registerDialog;
+        private readonly AgendarByDoctorDialog _agendarByDoctorDialog;
         private readonly ILogger _logger;
         private readonly IStatePropertyAccessor<DialogState> _dialogStateAccessor;
         private readonly IStatePropertyAccessor<UserProfileModel> _userStateAccessor;
+        private readonly string UrlAseguradoraId = "https://api-insurers-test-001.azurewebsites.net/Insurance?insuranceID=";
+        private readonly string UrlAseguradoraPlanId = "https://api-plans-prod-001.azurewebsites.net/InsurancePlan?InsurancePlanID=1&includeQuotes=true";
 
-        public AgendarDialog(ILogger<MainDialog> logger, CLUService cluService, UserState userState, ConversationState conversationState, ApiCalls apiCalls, CustomChoicePrompt customChoicePrompt, RegisterDialog registerDialog)
+        public AgendarDialog(ILogger<MainDialog> logger, CLUService cluService, UserState userState, ConversationState conversationState, ApiCalls apiCalls, CustomChoicePrompt customChoicePrompt, RegisterDialog registerDialog, AgendarByDoctorDialog agendarByDoctorDialog)
            : base(nameof(AgendarDialog))
         {
             _userState = userState ?? throw new ArgumentNullException(nameof(userState));
@@ -44,8 +47,10 @@ namespace CoreBotTestDD.Dialogs
             _registerDialog = registerDialog;
             _dialogStateAccessor = _userState.CreateProperty<DialogState>("DialogState");
             _userStateAccessor = _userState.CreateProperty<UserProfileModel>("UserProfile");
+            _agendarByDoctorDialog = agendarByDoctorDialog;
 
             AddDialog(registerDialog);
+            AddDialog(agendarByDoctorDialog);
             AddDialog(new TextPrompt(nameof(TextPrompt)));
             AddDialog(new ChoicePrompt(nameof(ChoicePrompt), ChoiceValidatorAsync));
             AddDialog(customChoicePrompt);
@@ -57,9 +62,11 @@ namespace CoreBotTestDD.Dialogs
                 HandleDocumentTypeSelectionAsync,
                 GetDocumentIdAsync,
                 GetAseguradoraNameAsync,
+                HandleInsuranceUserSelectionAsync,
                 GetAseguradoraAsync,
                 HandleInsuranceSelectionAsync,
                 GetAseguradoraPlanAsync,
+                GetTypeConsultAsync,
                 GetServiceNameAsync,
                 GetServiceAsync,
                 HandleServiceSelectionAsync,
@@ -87,6 +94,7 @@ namespace CoreBotTestDD.Dialogs
                 await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
                 return await stepContext.NextAsync();
             }
+            userProfile.IsNewUser = true;
             try
             {
                 List<JObject> DocumentTypes = await _apiCalls.GetDocumentTypeAsync(userProfile.CodeCompany);
@@ -211,7 +219,18 @@ namespace CoreBotTestDD.Dialogs
                 await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
                 return await stepContext.ReplaceDialogAsync(nameof(WaterfallDialog), null, cancellationToken);
             }
+            else if (stepContext.Context.Activity.Text != null && stepContext.Context.Activity.Text.ToString().Equals("Cancelar", StringComparison.OrdinalIgnoreCase))
+            {
+                await ResetUserProfile(stepContext);
+                await stepContext.Context.SendActivityAsync("¿Te podemos ayudar en algo mas?");
+                return await stepContext.EndDialogAsync();
+            }
             userProfile.SaveData = false;
+            if (userProfile.Aseguradora != null || userProfile.Name != null)
+            {
+                await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
+                return await stepContext.NextAsync();
+            }
             if (userProfile.Name == null)
             {
                 var userData = await _apiCalls.GetUserByIdAsync(userProfile.DocumentType, userProfile.DocumentId, userProfile.CodeCompany);
@@ -219,8 +238,13 @@ namespace CoreBotTestDD.Dialogs
                 {
                     userProfile.UserId = userData["id"]?.ToString();
                     userProfile.Name = userData["name"]?.ToString();
-                    //userProfile.Aseguradora = userData["insurancePlan"]?["id"]?.ToString();
-                    await stepContext.Context.SendActivityAsync("Bienvenido " + userProfile.Name);
+                    userProfile.PlanAseguradora = userData["insurancePlan"]?["id"]?.ToString();
+                    userProfile.Aseguradora = await _apiCalls.GetInsurancePlanByIdAsync(userProfile.CodeCompany, userProfile.PlanAseguradora);
+                    if(userProfile.IsNewUser == true)
+                    {
+                        await stepContext.Context.SendActivityAsync("Bienvenido " + userProfile.Name);
+                        userProfile.IsNewUser = false;
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -230,14 +254,72 @@ namespace CoreBotTestDD.Dialogs
                     return await stepContext.BeginDialogAsync(nameof(RegisterDialog), null, cancellationToken);
                 }
             }
-            if (userProfile.Aseguradora != null)
+            var choices = new List<Choice>
+             {      
+                 new Choice { Value = "Si" },
+                 new Choice { Value = "No" },
+                 new Choice { Value = "Atras" }
+             };
+            var promptOptions = new PromptOptions
             {
-                await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
+                Prompt = MessageFactory.Text("Tienes asociado el convenio " + await _apiCalls.GetVariablesNameAsync(UrlAseguradoraId, userProfile.CodeCompany, userProfile.Aseguradora) + " - " + await _apiCalls.GetVariablesNameAsync(UrlAseguradoraPlanId, userProfile.CodeCompany, userProfile.Aseguradora) + " ¿Quieres agendar tu cita con esta aseguradora? Escribe el numero de la opcion que deseas."),
+                Choices = choices,
+                Style = ListStyle.List
+            };
+            stepContext.Values["Choice"] = choices;
+            await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
+            return await stepContext.PromptAsync(nameof(CustomChoicePrompt), promptOptions, cancellationToken);
+        }
+
+        private async Task<DialogTurnResult> HandleInsuranceUserSelectionAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
+        {
+            var userProfile = await _userStateAccessor.GetAsync(stepContext.Context, () => new UserProfileModel(), cancellationToken);
+            var choiceResult = stepContext.Result as FoundChoice;
+            if (userProfile.Aseguradora != null && choiceResult == null)
+            {
                 return await stepContext.NextAsync();
             }
-            await stepContext.Context.SendActivityAsync("\r\nBot said:\r\n¿Con que entidad de salud deseas solicitar la cita? (Ejemplo: Sura) Escribe atras si quieres cambiar tu informacion anterior." + userProfile.Aseguradora);
-            await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
-            return new DialogTurnResult(DialogTurnStatus.Waiting);
+            userProfile.InsuranceInclude = false;
+            var choice = (FoundChoice)stepContext.Result;
+            if (choice != null)
+            {
+                if (choice.Value.Equals("Si", StringComparison.OrdinalIgnoreCase))
+                {
+                    userProfile.InsuranceInclude = true;
+                    await _conversationState.SaveChangesAsync(stepContext.Context);
+                    stepContext.Context.Activity.Text = null;
+                    return await stepContext.NextAsync();
+                }else if (choice.Value.Equals("No", StringComparison.OrdinalIgnoreCase))
+                {
+                    stepContext.Context.Activity.Text = null;
+                    userProfile.Aseguradora = null;
+                    userProfile.PlanAseguradora = null;
+                    await _conversationState.SaveChangesAsync(stepContext.Context);
+                    await stepContext.Context.SendActivityAsync("¿Con que entidad de salud deseas solicitar la cita? (Ejemplo: Sura) Escribe atras si quieres cambiar tu informacion anterior.");
+                    return new DialogTurnResult(DialogTurnStatus.Waiting);
+                }
+                else if (choice.Value.Equals("Atras", StringComparison.OrdinalIgnoreCase))
+                {
+                    stepContext.Context.Activity.Text = null;
+                    userProfile.Aseguradora = null;
+                    userProfile.PlanAseguradora = null;
+                    userProfile.DocumentId = null;
+                    userProfile.Name = null;
+                    await _conversationState.SaveChangesAsync(stepContext.Context);
+                    await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
+                    return await stepContext.ReplaceDialogAsync(nameof(WaterfallDialog), null, cancellationToken);
+                }
+                else
+                {
+                    await stepContext.Context.SendActivityAsync("Opción seleccionada no válida.", cancellationToken: cancellationToken);
+                    return await stepContext.EndDialogAsync();
+                }
+            }
+            else
+            {
+                await stepContext.Context.SendActivityAsync("Opción seleccionada no válida.", cancellationToken: cancellationToken);
+                return await stepContext.EndDialogAsync();
+            }
         }
 
         private async Task<DialogTurnResult> GetAseguradoraAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
@@ -256,11 +338,24 @@ namespace CoreBotTestDD.Dialogs
             var userProfile = await _userStateAccessor.GetAsync(stepContext.Context, () => new UserProfileModel(), cancellationToken);
             if (stepContext.Context.Activity.Text != null && stepContext.Context.Activity.Text.ToString().Equals("Atras", StringComparison.OrdinalIgnoreCase))
             {
-                userProfile.DocumentId = null;
-                stepContext.Context.Activity.Text = null;
+                switch (userProfile.InsuranceInclude)
+                {
+                    case true:
+                        return await stepContext.BeginDialogAsync(nameof(RegisterDialog), null, cancellationToken);
+                    case false:
+                        userProfile.Name = null;
+                        userProfile.Aseguradora = null;
+                        stepContext.Context.Activity.Text = null;
+                        break;
+                }
                 await _conversationState.SaveChangesAsync(stepContext.Context);
                 await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
                 return await stepContext.ReplaceDialogAsync(nameof(WaterfallDialog), null, cancellationToken);
+            }else if(stepContext.Context.Activity.Text != null && stepContext.Context.Activity.Text.ToString().Equals("Cancelar", StringComparison.OrdinalIgnoreCase))
+            {
+                await ResetUserProfile(stepContext);
+                await stepContext.Context.SendActivityAsync("¿Te podemos ayudar en algo mas?");
+                return await stepContext.EndDialogAsync();
             }
             if (userProfile.Aseguradora != null)
             {
@@ -392,7 +487,7 @@ namespace CoreBotTestDD.Dialogs
 
         }
 
-        private async Task<DialogTurnResult> GetServiceNameAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
+        private async Task<DialogTurnResult> GetTypeConsultAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
         {
             var choice = (FoundChoice)stepContext.Result;
             var userProfile = await _userStateAccessor.GetAsync(stepContext.Context, () => new UserProfileModel(), cancellationToken);
@@ -404,7 +499,7 @@ namespace CoreBotTestDD.Dialogs
                 await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
                 return await stepContext.ReplaceDialogAsync(nameof(WaterfallDialog), null, cancellationToken);
             }
-            if (userProfile.Servicios != null)
+            if (userProfile.TypeConsult != null)
             {
                 return await stepContext.NextAsync();
             }
@@ -414,10 +509,73 @@ namespace CoreBotTestDD.Dialogs
                 var selectedOption = options.FirstOrDefault(option => option.Name == choice.Value);
                 userProfile.PlanAseguradora = selectedOption.Id;
             }
-            await stepContext.Context.SendActivityAsync("Que servicio deseas agendar? (Ejemplo: Cardiologia) \n\n Escribe atras si quieres cambiar tu informacion anterior.");
-            userProfile.SaveData = false;
+            var choices = new List<Choice>
+        {
+            new Choice { Value = "Nombre del profesional" },
+            new Choice { Value = "Servicio" },
+            new Choice { Value = "Atras" }
+        };
+            var promptOptions = new PromptOptions
+            {
+                Prompt = MessageFactory.Text("Puedes escoger realizar el agendamiento por:"),
+                Choices = choices,
+                Style = ListStyle.List
+            };
+            stepContext.Values["Choice"] = choices;
             await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
-            return new DialogTurnResult(DialogTurnStatus.Waiting);
+            return await stepContext.PromptAsync(nameof(CustomChoicePrompt), promptOptions, cancellationToken);
+        }
+
+        private async Task<DialogTurnResult> GetServiceNameAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
+        {
+
+            var userProfile = await _userStateAccessor.GetAsync(stepContext.Context, () => new UserProfileModel(), cancellationToken);
+            var choice = stepContext.Result as FoundChoice;
+            if (userProfile.Servicios != null)
+            {
+                return await stepContext.NextAsync();
+            }
+            if (choice == null)
+            {
+                choice = new FoundChoice { Value = userProfile.TypeConsult };
+            }
+            choice.Value ??= userProfile.TypeConsult;
+            if (choice != null || userProfile.TypeConsult != null)
+            {
+                if (choice != null && choice.Value.Equals("Atras", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (userProfile.InsuranceInclude == true)
+                    {
+                        userProfile.Name = null;
+                        userProfile.Aseguradora = null;
+                    }
+                    userProfile.PlanAseguradora = null;
+                    stepContext.Context.Activity.Text = null;
+                    await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
+                    return await stepContext.ReplaceDialogAsync(nameof(WaterfallDialog), null, cancellationToken);
+                }
+                else if (choice.Value.Equals("Nombre del profesional", StringComparison.OrdinalIgnoreCase))
+                {
+                    stepContext.Context.Activity.Text = null;
+                    userProfile.TypeConsult = "Doctor";
+                    await _conversationState.SaveChangesAsync(stepContext.Context);
+                    return await stepContext.BeginDialogAsync(nameof(AgendarByDoctorDialog), null, cancellationToken);
+                }
+                else
+                {
+                    userProfile.TypeConsult = "Service";
+                    await stepContext.Context.SendActivityAsync("Que servicio deseas agendar? (Ejemplo: Cardiologia) \n\n Escribe atras si quieres cambiar tu informacion anterior.");
+                    userProfile.SaveData = false;
+                    await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
+                    return new DialogTurnResult(DialogTurnStatus.Waiting);
+                }
+
+            }
+            else
+            {
+                await stepContext.Context.SendActivityAsync("Opción seleccionada no válida.", cancellationToken: cancellationToken);
+                return await stepContext.EndDialogAsync();
+            }
         }
 
         private async Task<DialogTurnResult> GetServiceAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
@@ -425,12 +583,34 @@ namespace CoreBotTestDD.Dialogs
             var dialogState = await _dialogStateAccessor.GetAsync(stepContext.Context, () => new DialogState(), cancellationToken);
             stepContext.Values["DialogState"] = dialogState;
             var userProfile = await _userStateAccessor.GetAsync(stepContext.Context, () => new UserProfileModel(), cancellationToken);
+            var cancellationReason = stepContext.Result as dynamic;
+            try
+            {
+                if (cancellationReason.Reason != null && cancellationReason.Reason == DialogReason.CancelCalled)
+                {
+                    await ResetUserProfile(stepContext, cancellationToken);
+                    return await stepContext.EndDialogAsync();
+                }else if (cancellationReason.Reason != null && cancellationReason.Reason == DialogReason.ReplaceCalled)
+                {
+                    userProfile.TypeConsult = null;
+                    stepContext.Context.Activity.Text = null;
+                    await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
+                    return await stepContext.ReplaceDialogAsync(nameof(WaterfallDialog), null, cancellationToken);
+                }
+            }
+            catch (Exception e) { };
             if (stepContext.Context.Activity.Text != null && stepContext.Context.Activity.Text.ToString().Equals("Atras", StringComparison.OrdinalIgnoreCase))
             {
-                userProfile.PlanAseguradora = null;
+                userProfile.TypeConsult = null;
                 stepContext.Context.Activity.Text = null;
                 await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
                 return await stepContext.ReplaceDialogAsync(nameof(WaterfallDialog), null, cancellationToken);
+            }
+            else if (stepContext.Context.Activity.Text != null && stepContext.Context.Activity.Text.ToString().Equals("Cancelar", StringComparison.OrdinalIgnoreCase))
+            {
+                await ResetUserProfile(stepContext);
+                await stepContext.Context.SendActivityAsync("¿Te podemos ayudar en algo mas?");
+                return await stepContext.EndDialogAsync();
             }
             if (userProfile.Servicios != null)
             {
@@ -834,6 +1014,8 @@ namespace CoreBotTestDD.Dialogs
             userProfile.Aseguradora = null;
             userProfile.PlanAseguradora = null;
             userProfile.Servicios = null;
+            userProfile.IsNewUser = false;
+            userProfile.TypeConsult = null;
 
             await _userStateAccessor.SetAsync(context.Context, userProfile, cancellationToken);
             await _userState.SaveChangesAsync(context.Context, false, cancellationToken);

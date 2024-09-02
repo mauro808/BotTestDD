@@ -119,6 +119,9 @@ namespace CoreBotTestDD.Dialogs
                     userProfile.IsNewUser = true;
                     await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
                     return await stepContext.EndDialogAsync();
+                }else if (IntentScore == "Afirmacion")
+                {
+
                 }
                 else
                 {

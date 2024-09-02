@@ -91,6 +91,7 @@ namespace CoreBotTestDD
             services.AddSingleton<MainDialog>();
             services.AddTransient<AgendarDialog>();
             services.AddSingleton<RegisterDialog>();
+            services.AddSingleton<AgendarByDoctorDialog>();
             //services.AddHostedService<InactivityBackgroundService>();
             // Create the bot as a transient. In this case the ASP Controller is expecting an IBot.
             services.AddTransient<IBot, DialogAndWelcomeBot<MainDialog>>();
