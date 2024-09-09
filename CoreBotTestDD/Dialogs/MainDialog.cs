@@ -6,6 +6,7 @@ using CoreBotTestDD.CognitiveModels;
 using CoreBotTestDD.Models;
 using CoreBotTestDD.Services;
 using CoreBotTestDD.Utilities;
+using DonBot.Dialogs;
 using Microsoft.Bot.Builder;
 using Microsoft.Bot.Builder.Dialogs;
 using Microsoft.Bot.Schema;
@@ -27,13 +28,14 @@ namespace CoreBotTestDD.Dialogs
         private readonly UserState _userState;
         private readonly ConversationState _conversationState;
         private readonly AgendarDialog _agendarDialog;
+        private readonly CancelarCitaDialog _cancelarCitaDialog;
         private readonly CLUService _cluService;
         private readonly CQAService _cqaService;
         private readonly ClientMessages _clientMessages;
         private readonly ILogger _logger;
         private readonly IStatePropertyAccessor<UserProfileModel> _userStateAccessor;
 
-        public MainDialog(CLUService cluService, CQAService cqaService, ClientMessages clientMessages, ILogger<MainDialog> logger, UserState userState, ConversationState conversationState, AgendarDialog agendarDialog, IBotTelemetryClient telemetryClient)
+        public MainDialog(CLUService cluService, CQAService cqaService, ClientMessages clientMessages, ILogger<MainDialog> logger, UserState userState, ConversationState conversationState, AgendarDialog agendarDialog, CancelarCitaDialog cancelarCitaDialog,IBotTelemetryClient telemetryClient)
             : base(nameof(MainDialog))
         {
             _userState = userState ?? throw new ArgumentNullException(nameof(userState));
@@ -45,8 +47,10 @@ namespace CoreBotTestDD.Dialogs
             _logger = logger;
             _userStateAccessor = _userState.CreateProperty<UserProfileModel>("UserProfile");
             _agendarDialog = agendarDialog;
+            _cancelarCitaDialog = cancelarCitaDialog;
 
             AddDialog(agendarDialog);
+            AddDialog(cancelarCitaDialog);
             AddDialog(new TextPrompt(nameof(TextPrompt)));
 
             var waterfallSteps = new WaterfallStep[]
@@ -65,7 +69,7 @@ namespace CoreBotTestDD.Dialogs
             var userProfile = await _userStateAccessor.GetAsync(stepContext.Context, () => new UserProfileModel { IsNewUser = true }, cancellationToken);
             if (userProfile.IsNewUser)
             {
-                userProfile.CodeCompany = "6b5e37ce5ee0ef483fd1fe928ad28d283109bfcf6bd09f29a6682b5fe8fef17b";
+                userProfile.CodeCompany = "330ab1418a035af17b0762b7920f84e78998aea19f5d94948d1ae7ed481514a7";
                 //userProfile.CodeCompany = await _clientMessages.GetClientSha("whatsapp:+573247496430");
                 //await stepContext.Context.SendActivityAsync(MessageFactory.Text(await _clientMessages.GetClientMessages("Bienvenida", userProfile.CodeCompany)));
                 //await stepContext.Context.SendActivityAsync(MessageFactory.Text(await _clientMessages.GetClientMessages("Tratamiento datos personales", userProfile.CodeCompany)));
@@ -122,6 +126,10 @@ namespace CoreBotTestDD.Dialogs
                 }else if (IntentScore == "Afirmacion")
                 {
 
+                }else if(IntentScore == "Cancelacion de cita" || generalScore == "Cancelar cita")
+                {
+                    await stepContext.Context.SendActivityAsync("Muy bien, vamos a realizar la cancelacion de una cita.", cancellationToken: cancellationToken);
+                    return await stepContext.BeginDialogAsync(nameof(CancelarCitaDialog), null, cancellationToken);
                 }
                 else
                 {

@@ -29,6 +29,7 @@ namespace CoreBotTestDD.Dialogs
         private readonly CLUService _cluService;
         private readonly ConversationState _conversationState;
         private readonly RegisterDialog _registerDialog;
+        private readonly ListaEsperaDialog _listaEsperaDialog;
         private readonly AgendarByDoctorDialog _agendarByDoctorDialog;
         private readonly ILogger _logger;
         private readonly IStatePropertyAccessor<DialogState> _dialogStateAccessor;
@@ -36,7 +37,7 @@ namespace CoreBotTestDD.Dialogs
         private readonly string UrlAseguradoraId = "https://api-insurers-test-001.azurewebsites.net/Insurance?insuranceID=";
         private readonly string UrlAseguradoraPlanId = "https://api-plans-prod-001.azurewebsites.net/InsurancePlan?InsurancePlanID=1&includeQuotes=true";
 
-        public AgendarDialog(ILogger<MainDialog> logger, CLUService cluService, UserState userState, ConversationState conversationState, ApiCalls apiCalls, CustomChoicePrompt customChoicePrompt, RegisterDialog registerDialog, AgendarByDoctorDialog agendarByDoctorDialog)
+        public AgendarDialog(ILogger<MainDialog> logger, CLUService cluService, UserState userState, ConversationState conversationState, ApiCalls apiCalls, CustomChoicePrompt customChoicePrompt, RegisterDialog registerDialog, AgendarByDoctorDialog agendarByDoctorDialog, ListaEsperaDialog listaEsperaDialog)
            : base(nameof(AgendarDialog))
         {
             _userState = userState ?? throw new ArgumentNullException(nameof(userState));
@@ -45,11 +46,13 @@ namespace CoreBotTestDD.Dialogs
             _apiCalls = apiCalls;
             _cluService = cluService;
             _registerDialog = registerDialog;
+            _listaEsperaDialog = listaEsperaDialog;
             _dialogStateAccessor = _userState.CreateProperty<DialogState>("DialogState");
             _userStateAccessor = _userState.CreateProperty<UserProfileModel>("UserProfile");
             _agendarByDoctorDialog = agendarByDoctorDialog;
 
             AddDialog(registerDialog);
+            AddDialog(listaEsperaDialog);
             AddDialog(agendarByDoctorDialog);
             AddDialog(new TextPrompt(nameof(TextPrompt)));
             AddDialog(new ChoicePrompt(nameof(ChoicePrompt), ChoiceValidatorAsync));
@@ -795,9 +798,9 @@ namespace CoreBotTestDD.Dialogs
                 if (ScheduleAvailability == null || !ScheduleAvailability.Any())
                 {
                     await stepContext.Context.SendActivityAsync("No se encontro agenda disponible. ", cancellationToken: cancellationToken);
-                    await stepContext.Context.SendActivityAsync("¿Puedo ayudarte en algo mas? ", cancellationToken: cancellationToken);
-                    await ResetUserProfile(stepContext);
-                    return await stepContext.EndDialogAsync();
+                    stepContext.Context.Activity.Text = null;
+                    await _conversationState.SaveChangesAsync(stepContext.Context);
+                    return await stepContext.BeginDialogAsync(nameof(ListaEsperaDialog), null, cancellationToken);
                 }
                 else
                 {
@@ -847,6 +850,16 @@ namespace CoreBotTestDD.Dialogs
         private async Task<DialogTurnResult> HandleScheduleAvailabilityAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
         {
             var userProfile = await _userStateAccessor.GetAsync(stepContext.Context, () => new UserProfileModel(), cancellationToken);
+            var cancellationReason = stepContext.Result as dynamic;
+            try
+            {
+                if (cancellationReason.Reason != null && cancellationReason.Reason == DialogReason.CancelCalled)
+                {
+                    await ResetUserProfile(stepContext, cancellationToken);
+                    return await stepContext.EndDialogAsync();
+                }
+            }
+            catch (Exception e) { };
             var choice = (FoundChoice)stepContext.Result;
             if (choice != null && choice.Value.Equals("Atras", StringComparison.OrdinalIgnoreCase))
             {

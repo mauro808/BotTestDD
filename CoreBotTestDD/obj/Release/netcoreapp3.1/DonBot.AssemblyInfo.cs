@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("DonBot")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+4c067e60710fa9261539884ee8e7aafd08557e78")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+4b78666e8a795fae2949684039cb4a5a0c275c53")]
 [assembly: System.Reflection.AssemblyProductAttribute("DonBot")]
 [assembly: System.Reflection.AssemblyTitleAttribute("DonBot")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

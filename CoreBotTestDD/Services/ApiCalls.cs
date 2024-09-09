@@ -279,7 +279,7 @@ namespace CoreBotTestDD.Services
 
         public async Task<List<JObject>> GetCityListAsync(string clientCode, string ciudad)
         {
-            string ServicesEndpoint = "https://api-locations-prod-001.azurewebsites.net/Cities/GetByName?name="+ciudad;
+            string ServicesEndpoint = "https://api-locations-prod-001.azurewebsites.net/Cities/GetByName?name=" + ciudad;
             try
             {
                 using (HttpClient client = new HttpClient())
@@ -506,6 +506,77 @@ namespace CoreBotTestDD.Services
                         }
                         string jsonResponse = await response.Content.ReadAsStringAsync();
                         return JsonConvert.DeserializeObject<List<JObject>>(jsonResponse);
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Error: {response.StatusCode}");
+                        return null;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Excepción: {ex.Message}");
+                    return null;
+                }
+            }
+
+        }
+
+        public async Task<List<JObject>> GetCitasByPatientAsync(string ServiceId, string clientCode)
+        {
+            string url = "https://api-appointments-test-001.azurewebsites.net/Appointments/Patient?patientID=" + ServiceId;
+            using (HttpClient client = new HttpClient())
+            {
+                try
+                {
+                    client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", await AutenticationAsync(clientCode));
+                    HttpResponseMessage response = await client.GetAsync(url);
+
+                    if (response.IsSuccessStatusCode)
+                    {
+                        if (response.StatusCode.Equals("204"))
+                        {
+                            return null;
+                        }
+                        string data = await response.Content.ReadAsStringAsync();
+                        List<JObject> jsonObjectList = JsonConvert.DeserializeObject<List<JObject>>(data);
+                        List<JObject> filteredList = jsonObjectList.Where(obj => obj["state"]?.ToObject<string>() == "A")
+                        .ToList();
+                        return filteredList;
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Error: {response.StatusCode}");
+                        return null;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Excepción: {ex.Message}");
+                    return null;
+                }
+            }
+
+        }
+
+        public async Task<JObject> GetCitasByIdAsync(string citaId, string clientCode)
+        {
+            string url = "https://api-appointments-test-001.azurewebsites.net/Appointments?appointmentID=" + citaId;
+            using (HttpClient client = new HttpClient())
+            {
+                try
+                {
+                    client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", await AutenticationAsync(clientCode));
+                    HttpResponseMessage response = await client.GetAsync(url);
+
+                    if (response.IsSuccessStatusCode)
+                    {
+                        if (response.StatusCode.Equals("204"))
+                        {
+                            return null;
+                        }
+                        string jsonResponse = await response.Content.ReadAsStringAsync();
+                        return JsonConvert.DeserializeObject<JObject>(jsonResponse);
                     }
                     else
                     {
@@ -757,6 +828,71 @@ namespace CoreBotTestDD.Services
 
         }
 
+        public async Task<bool> PostCancelCitaAsync(string citaId, string userId ,string clientCode)
+        {
+            var url = "https://api-appointments-test-001.azurewebsites.net/Appointments";
+            JObject citaData = await GetCitasByIdAsync(citaId, clientCode);
+            string AppointmentId = citaData["appointmentID"].ToString();
+            bool Confirmed = bool.TryParse(citaData["confirmed"].ToString(), out bool result) ? result : false;
+            //var origin = citaData["origin"].ToString();
+            bool StatisticsIgnore = bool.TryParse(citaData["statisticsIgnore"].ToString(), out bool resultStatistic) ? resultStatistic : false;
+
+            if (!int.TryParse(AppointmentId, out int appointmentId))
+            {
+                throw new ArgumentException("AppointmentTypeId no es un entero válido.");
+            }
+            if (!int.TryParse(userId, out int UserId))
+            {
+                throw new ArgumentException("AppointmentTypeId no es un entero válido.");
+            }
+
+            /*if (!int.TryParse(origin, out int originIn))
+            {
+                throw new ArgumentException("UserId no es un entero válido.");
+            }*/
+            using (HttpClient client = new HttpClient())
+            {
+                try
+                {
+                    client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", await AutenticationAsync(clientCode));
+                    var parametros = new Dictionary<string, object>
+                    {
+                       { "AppointmentID", appointmentId },
+                        { "StatisticsIgnore", StatisticsIgnore },
+                        { "State", "C" },
+                        { "Origin", 3 },
+                        { "UserId", UserId },
+                        { "Confirmed", Confirmed }
+
+                    };
+                    var jsonContent = JsonConvert.SerializeObject(parametros);
+                    var httpContent = new StringContent(jsonContent, Encoding.UTF8, "application/json");
+                    HttpResponseMessage response = await client.PutAsync(url, httpContent);
+
+                    if (response.IsSuccessStatusCode)
+                    {
+                        if (response.StatusCode.Equals("204"))
+                        {
+                            return false;
+                        }
+                        return true; ;
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Error: {response.StatusCode}");
+                        return false;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Excepción: {ex.Message}");
+                    return false;
+                }
+            }
+
+        }
+
+
         public async Task<string> GetVariablesNameAsync(string urlExt, string clientCode, string Id)
         {
             string url;
@@ -959,9 +1095,60 @@ namespace CoreBotTestDD.Services
             }
         }
 
+        public async Task<bool> PostCreateListaEsperaAsync(UserProfileModel userProfile)
+        {
+            var url = "https://api-waitinglist-test-001.azurewebsites.net/PatientWaitingList";
+            using (HttpClient client = new HttpClient())
+            {
+                try
+                {
+                    client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", await AutenticationAsync(userProfile.CodeCompany));
+                    var parametros = new
+                    {
+                        userID = int.Parse(userProfile.UserId),
+                        planID = int.Parse(userProfile.PlanAseguradora),
+                        entityID = int.Parse(userProfile.Aseguradora),
+                        serviceID = int.Parse(userProfile.Servicios),
+                        createdUserID = int.Parse(userProfile.DocumentId),
+                        documentTypeID = int.Parse(userProfile.DocumentType),
+                        name = userProfile.Name,
+                        lastName = userProfile.LastName,
+                        email = userProfile.Email,
+                        cellPhone = userProfile.Phone,
+                        specialtyID = int.Parse(userProfile.especialidad),
+                        modality = "Presencial",
+                    };
+                    var jsonContent = JsonConvert.SerializeObject(parametros);
+                    var httpContent = new StringContent(jsonContent, Encoding.UTF8, "application/json");
+                    HttpResponseMessage response = await client.PostAsync(url, httpContent);
+
+                    if (response.IsSuccessStatusCode)
+                    {
+                        if (response.StatusCode.Equals("204"))
+                        {
+                            return false;
+                        }
+                        string jsonResponse = await response.Content.ReadAsStringAsync();
+                        return true;
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Error: {response.StatusCode}");
+                        return false;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Excepción: {ex.Message}");
+                    return false;
+                }
+            }
+
+        }
+
         public async Task<List<JObject>> GetDoctorListAsync(string clientCode, string DoctorName)
         {
-            string ServicesEndpoint = "https://api-users-test-001.azurewebsites.net/User/GetByName?name="+ DoctorName;
+            string ServicesEndpoint = "https://api-users-test-001.azurewebsites.net/Doctor/GetByName?name=" + DoctorName;
             try
             {
                 using (HttpClient client = new HttpClient())

@@ -218,7 +218,10 @@ namespace DonBot.Dialogs
                 if (Servicios == null || !Servicios.Any())
                 {
                     await stepContext.Context.SendActivityAsync("Actualmente el profesional no cuenta con servicios para auto agendamiento, te invitamos a comunicarte con los numeros de atencion de la institucion.", cancellationToken: cancellationToken);
-                    return await stepContext.ReplaceDialogAsync(nameof(WaterfallDialog), null, cancellationToken);
+                    await stepContext.Context.SendActivityAsync("¿Puedo ayudarte en algo más?", cancellationToken: cancellationToken);
+                    var cancellationReason = new { Reason = DialogReason.CancelCalled };
+                    await stepContext.CancelAllDialogsAsync(cancellationToken);
+                    return await stepContext.EndDialogAsync(cancellationReason, cancellationToken);
                 }
                 else
                 {
