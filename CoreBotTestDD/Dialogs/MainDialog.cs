@@ -28,6 +28,7 @@ namespace CoreBotTestDD.Dialogs
         private readonly UserState _userState;
         private readonly ConversationState _conversationState;
         private readonly AgendarDialog _agendarDialog;
+        private readonly ReagendamientoDialog _reagendamientoDialog;
         private readonly CancelarCitaDialog _cancelarCitaDialog;
         private readonly CLUService _cluService;
         private readonly CQAService _cqaService;
@@ -35,7 +36,7 @@ namespace CoreBotTestDD.Dialogs
         private readonly ILogger _logger;
         private readonly IStatePropertyAccessor<UserProfileModel> _userStateAccessor;
 
-        public MainDialog(CLUService cluService, CQAService cqaService, ClientMessages clientMessages, ILogger<MainDialog> logger, UserState userState, ConversationState conversationState, AgendarDialog agendarDialog, CancelarCitaDialog cancelarCitaDialog,IBotTelemetryClient telemetryClient)
+        public MainDialog(CLUService cluService, CQAService cqaService, ClientMessages clientMessages, ILogger<MainDialog> logger, UserState userState, ConversationState conversationState, AgendarDialog agendarDialog, CancelarCitaDialog cancelarCitaDialog, ReagendamientoDialog reagendamientoDialog, IBotTelemetryClient telemetryClient)
             : base(nameof(MainDialog))
         {
             _userState = userState ?? throw new ArgumentNullException(nameof(userState));
@@ -48,9 +49,11 @@ namespace CoreBotTestDD.Dialogs
             _userStateAccessor = _userState.CreateProperty<UserProfileModel>("UserProfile");
             _agendarDialog = agendarDialog;
             _cancelarCitaDialog = cancelarCitaDialog;
+            _reagendamientoDialog = reagendamientoDialog;
 
             AddDialog(agendarDialog);
             AddDialog(cancelarCitaDialog);
+            AddDialog(reagendamientoDialog);
             AddDialog(new TextPrompt(nameof(TextPrompt)));
 
             var waterfallSteps = new WaterfallStep[]
@@ -73,7 +76,7 @@ namespace CoreBotTestDD.Dialogs
                 //userProfile.CodeCompany = await _clientMessages.GetClientSha("whatsapp:+573247496430");
                 //await stepContext.Context.SendActivityAsync(MessageFactory.Text(await _clientMessages.GetClientMessages("Bienvenida", userProfile.CodeCompany)));
                 //await stepContext.Context.SendActivityAsync(MessageFactory.Text(await _clientMessages.GetClientMessages("Tratamiento datos personales", userProfile.CodeCompany)));
-                await stepContext.Context.SendActivityAsync(MessageFactory.Text("Hola! Soy el asistente virtual de Mederi. Al continuar, aceptas nuestros términos y condiciones [URL](http://fundacionhomi.org/.co/). Te puedo ayudar a agendar y/o gestionar tus citas y pedir información. ¿Que deseas hacer? \n\n1-Agendar\n\n2- Obtener información"));
+                await stepContext.Context.SendActivityAsync(MessageFactory.Text("Hola! Soy el asistente virtual de Fundacion SantaFe. Al continuar, aceptas nuestros términos y condiciones [URL](https://fundacionsantafedebogota.com/piensalo/portalpacientes/portalpacientes/portalpacientes/portalpacientes/educacion/examenes-diagnosticos/portalpacientes/examenes-diagnosticos/portalpacientes/examenes-diagnosticos/educacion/portalpacientes/portalpacientes/educacion/portalpacientes/examenes-diagnosticos/portalpacientes/portalpacientes/examenes-diagnosticos/politica-tratamiento-datos-personales). Te puedo ayudar a agendar y/o gestionar tus citas y pedir información. ¿Que deseas hacer? \n\n1- Agendar\n\n2- Reprogramar cita\n\n3- Cancelar Cita\n\n4- Obtener informacion"));
                 userProfile.IsNewUser = false;
             }
             await _userStateAccessor.SetAsync(stepContext.Context, userProfile, cancellationToken);
@@ -94,7 +97,17 @@ namespace CoreBotTestDD.Dialogs
             {
                 await stepContext.Context.SendActivityAsync("Muy bien, vamos a agendar una cita.", cancellationToken: cancellationToken);
                 return await stepContext.BeginDialogAsync(nameof(AgendarDialog), null, cancellationToken);
-            }else if(stepContext.Context.Activity.Text == "2" || stepContext.Context.Activity.Text.Equals("obtener informacion", StringComparison.OrdinalIgnoreCase))
+            }else if(stepContext.Context.Activity.Text == "3")
+            {
+                await stepContext.Context.SendActivityAsync("Muy bien, vamos a realizar la cancelacion de una cita.", cancellationToken: cancellationToken);
+                return await stepContext.BeginDialogAsync(nameof(CancelarCitaDialog), null, cancellationToken);
+            }
+            else if (stepContext.Context.Activity.Text == "2" || stepContext.Context.Activity.Text.Equals("Reprogramar cita", StringComparison.OrdinalIgnoreCase))
+            {
+                await stepContext.Context.SendActivityAsync("Muy bien, vamos a realizar el reagendamiento de una cita.", cancellationToken: cancellationToken);
+                return await stepContext.BeginDialogAsync(nameof(ReagendamientoDialog), null, cancellationToken);
+            }
+            else if(stepContext.Context.Activity.Text == "4" || stepContext.Context.Activity.Text.Equals("obtener informacion", StringComparison.OrdinalIgnoreCase))
             {
                 await stepContext.Context.SendActivityAsync("Perfecto. ¿Que informacion necesitas? Si tengo respuesta para ello te dare la informacion.");
                 return await stepContext.NextAsync(null, cancellationToken);
@@ -111,25 +124,29 @@ namespace CoreBotTestDD.Dialogs
             else
             {
                 var generalScore = await _cluService.AnalyzeTextAsync(stepContext.Context.Activity.Text.ToString());
-                var IntentScore = await _cluService.AnalyzeTextEntitiesAsync(stepContext.Context.Activity.Text.ToString());
-                if (generalScore == "Agendar")
+                if (generalScore.intent == "Agendar")
                 {
                     await stepContext.Context.SendActivityAsync("Muy bien, vamos a agendar una cita.", cancellationToken: cancellationToken);
                     return await stepContext.BeginDialogAsync(nameof(AgendarDialog), null, cancellationToken);
                 }
-                else if (IntentScore == "Negacion")
+                else if (generalScore.key == "Negacion")
                 {
                     await stepContext.Context.SendActivityAsync("Fue un placer atenderte. Estare aqui para ayudarte en nuestra proxima interaccion.", cancellationToken: cancellationToken);
                     userProfile.IsNewUser = true;
                     await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
                     return await stepContext.EndDialogAsync();
-                }else if (IntentScore == "Afirmacion")
+                }else if (generalScore.key == "Afirmacion")
                 {
-
-                }else if(IntentScore == "Cancelacion de cita" || generalScore == "Cancelar cita")
+                    await stepContext.Context.SendActivityAsync("Cuentame, ¿En que te puedo ayudar?");
+                }
+                else if(generalScore.key == "Cancelacion de cita" || generalScore.intent == "Cancelar cita")
                 {
                     await stepContext.Context.SendActivityAsync("Muy bien, vamos a realizar la cancelacion de una cita.", cancellationToken: cancellationToken);
                     return await stepContext.BeginDialogAsync(nameof(CancelarCitaDialog), null, cancellationToken);
+                }else if(generalScore.key == "Reagendamiento" || generalScore.intent == "Reagendar")
+                {
+                    await stepContext.Context.SendActivityAsync("Muy bien, vamos a realizar el reagendamiento de una cita.", cancellationToken: cancellationToken);
+                    return await stepContext.BeginDialogAsync(nameof(ReagendamientoDialog), null, cancellationToken);
                 }
                 else
                 {

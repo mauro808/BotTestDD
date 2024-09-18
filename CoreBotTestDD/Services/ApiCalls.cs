@@ -540,7 +540,8 @@ namespace CoreBotTestDD.Services
                         }
                         string data = await response.Content.ReadAsStringAsync();
                         List<JObject> jsonObjectList = JsonConvert.DeserializeObject<List<JObject>>(data);
-                        List<JObject> filteredList = jsonObjectList.Where(obj => obj["state"]?.ToObject<string>() == "A")
+                        List<JObject> filteredList = jsonObjectList
+                        .Where(obj => obj["state"]?.ToObject<string>() == "A" && obj["appointmentTypeName"]?.ToObject<string>() != "" && obj["appointmentTypeName"]?.ToObject<string>() != null)
                         .ToList();
                         return filteredList;
                     }
@@ -593,9 +594,11 @@ namespace CoreBotTestDD.Services
 
         }
 
-        public async Task<List<JObject>> GetScheduleAvailabilityAsync(UserProfileModel userProfile)
+        public async Task<List<JObject>> GetScheduleAvailabilityAsync(UserProfileModel userProfile, string baseSearch)
         {
             var baseUrl = "https://api-schedules-test-001.azurewebsites.net/ScheduleAvailability";
+            DateTime fechaActual = DateTime.Now;
+            string fechaFormateada;
             var query = new List<string>
                 {
                     $"size=30",
@@ -605,6 +608,83 @@ namespace CoreBotTestDD.Services
                     $"specialtyId={userProfile.especialidad}",
                     $"available=true"
                 };
+            switch (baseSearch)
+            {
+                case "1":
+                    int diasParaLunes = ((int)DayOfWeek.Monday - (int)fechaActual.DayOfWeek + 7) % 7;
+                    if (diasParaLunes == 0)
+                    {
+                        diasParaLunes = 7;
+                    };
+                    DateTime proximoLunes = fechaActual.AddDays(diasParaLunes);
+                    fechaFormateada = proximoLunes.ToString("yyyy-MM-ddTHH:mm:ss");
+                    query.Add($"DateFrom={fechaFormateada}");
+                    break;
+                case "2":
+                    DateTime primerDiaProximoMes = new DateTime(fechaActual.Year, fechaActual.Month, 1).AddMonths(1);
+                    fechaFormateada = primerDiaProximoMes.ToString("yyyy-MM-ddTHH:mm:ss");
+                    query.Add($"DateFrom={fechaFormateada}");
+                    break;
+
+            }
+            var fullUrl = $"{baseUrl}?{string.Join("&", query)}";
+            using (HttpClient client = new HttpClient())
+            {
+                try
+                {
+                    client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", await AutenticationAsync(userProfile.CodeCompany));
+                    HttpResponseMessage response = await client.GetAsync(fullUrl);
+
+                    if (response.IsSuccessStatusCode)
+                    {
+                        if (response.StatusCode.Equals("204"))
+                        {
+                            return null;
+                        }
+                        string jsonResponse = await response.Content.ReadAsStringAsync();
+                        return JsonConvert.DeserializeObject<List<JObject>>(jsonResponse);
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Error: {response.StatusCode}");
+                        return null;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Excepción: {ex.Message}");
+                    return null;
+                }
+            }
+
+        }
+
+        public async Task<List<JObject>> GetScheduleAvailabilityByMonthAsync(UserProfileModel userProfile, int mes)
+        {
+            var baseUrl = "https://api-schedules-test-001.azurewebsites.net/ScheduleAvailability";
+            int anioSeleccionado;
+            int anioActual = DateTime.Now.Year;
+            int mesActual = DateTime.Now.Month;
+            if (mes < mesActual)
+            {
+                anioSeleccionado = anioActual + 1;
+            }
+            else
+            {
+                anioSeleccionado = anioActual;
+            }
+            DateTime fechaPrimerDia = new DateTime(anioSeleccionado, mes, 1);
+            string fechaFormateada = fechaPrimerDia.ToString("yyyy-MM-ddTHH:mm:ss");
+            var query = new List<string>
+                {
+                    $"size=30",
+                    $"page=0",
+                    $"planId={userProfile.PlanAseguradora}",
+                    $"serviceId={userProfile.Servicios}",
+                    $"specialtyId={userProfile.especialidad}",
+                    $"available=true"
+                };
+            query.Add($"DateFrom={fechaFormateada}");
             var fullUrl = $"{baseUrl}?{string.Join("&", query)}";
             using (HttpClient client = new HttpClient())
             {
@@ -1053,9 +1133,9 @@ namespace CoreBotTestDD.Services
 
         }
 
-        public async Task<string> GetPreparationAsync(UserProfileModel userData)
+        public async Task<List<string>> GetPreparationAsync(UserProfileModel userData)
         {
-            string url = UrlPreparation + userData.Servicios + "&isPublic=false";
+            string url = UrlPreparation + userData.Servicios + "&isPublic=true";
             using (HttpClient client = new HttpClient())
             {
                 try
@@ -1071,10 +1151,24 @@ namespace CoreBotTestDD.Services
                         }
                         string jsonResponse = await response.Content.ReadAsStringAsync();
                         JArray jsonArray;
+                        List<string> names = new List<string>();
                         jsonArray = JArray.Parse(jsonResponse);
-                        if (jsonArray.Count > 0)
+                        if (jsonArray.Count == 1)
                         {
-                            return jsonArray[0]["name"]?.ToString();
+                            names.Add(jsonArray[0]["name"]?.ToString());
+                            return names;
+                        }else if(jsonArray.Count > 1)
+                        {
+                            foreach (JObject obj in jsonArray)
+                            {
+
+                                if (obj["name"] != null)
+                                {
+                                    string name = obj["name"].ToString();
+                                    names.Add(name);
+                                }
+                            }
+                            return names;
                         }
                         else
                         {
@@ -1093,6 +1187,80 @@ namespace CoreBotTestDD.Services
                     return null;
                 }
             }
+        }
+
+        public async Task<bool> PutReagendarCitaAsync(object obj, string clientCode, string citaId, string UserId)
+        {
+            var url = "https://api-appointments-test-001.azurewebsites.net/Appointments";
+            bool ResultRef = false;
+            var dateTimeString = obj.GetType().GetProperty("DateTime");
+            var durationObj = obj.GetType().GetProperty("Duration");
+            var DoctorObj = obj.GetType().GetProperty("UserId");
+            var OfficeObj = obj.GetType().GetProperty("OfficeId");
+            string OfficeString = OfficeObj?.GetValue(obj) as string;
+            string DoctorString = DoctorObj?.GetValue(obj) as string;
+            string durationString = durationObj?.GetValue(obj) as string;
+            if (!int.TryParse(durationString, out int duration))
+            {
+                throw new ArgumentException("AppointmentTypeId no es un entero válido.");
+            }
+            if (!int.TryParse(DoctorString, out int DoctorId))
+            {
+                throw new ArgumentException("AppointmentTypeId no es un entero válido.");
+            }
+            if (!int.TryParse(OfficeString, out int OfficeId))
+            {
+                throw new ArgumentException("AppointmentTypeId no es un entero válido.");
+            }
+            if (!int.TryParse(UserId, out int userId))
+            {
+                throw new ArgumentException("AppointmentTypeId no es un entero válido.");
+            }
+            string DateTimeString = dateTimeString?.GetValue(obj) as string;
+            DateTime dateTime = DateTime.Parse(DateTimeString);
+            DateTime nuevaFecha = dateTime.AddMinutes(duration);
+            string horaFormateada = nuevaFecha.ToString("HH:mm:ss");
+            using (HttpClient client = new HttpClient())
+            {
+                try
+                {
+                    client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", await AutenticationAsync(clientCode));
+                    var parametros = new Dictionary<string, object>
+                    {
+                       { "AppointmentID", int.Parse(citaId) },
+                       { "DateFrom", dateTime},
+                        { "To", horaFormateada },
+                        { "DoctorID", DoctorId },
+                        {"OfficeID",  OfficeId},
+                        {"Origin", 3 },
+                        {"UserID", userId }
+
+                    };
+                    var jsonContent = JsonConvert.SerializeObject(parametros);
+                    var httpContent = new StringContent(jsonContent, Encoding.UTF8, "application/json");
+                    HttpResponseMessage response = await client.PutAsync(url, httpContent);
+
+                    if (response.IsSuccessStatusCode)
+                    {
+                        if (response.StatusCode.Equals("204"))
+                        {
+                            return false;
+                        }
+                        return true; ;
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Error: {response.StatusCode}");
+                        return ResultRef;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Excepción: {ex.Message}");
+                    return false;
+                }
+            }
+
         }
 
         public async Task<bool> PostCreateListaEsperaAsync(UserProfileModel userProfile)

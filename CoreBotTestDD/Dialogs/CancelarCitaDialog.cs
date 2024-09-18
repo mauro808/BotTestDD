@@ -19,7 +19,6 @@ namespace DonBot.Dialogs
         private readonly UserState _userState;
         private readonly ApiCalls _apiCalls;
         private readonly ConversationState _conversationState;
-        private readonly RegisterDialog _registerDialog;
         private readonly ILogger _logger;
         private readonly IStatePropertyAccessor<DialogState> _dialogStateAccessor;
         private readonly IStatePropertyAccessor<UserProfileModel> _userStateAccessor;
@@ -31,7 +30,6 @@ namespace DonBot.Dialogs
             _conversationState = conversationState ?? throw new ArgumentNullException(nameof(conversationState));
             _logger = logger;
             _apiCalls = apiCalls;
-            _registerDialog = registerDialog;
             _dialogStateAccessor = _userState.CreateProperty<DialogState>("DialogState");
             _userStateAccessor = _userState.CreateProperty<UserProfileModel>("UserProfile");
 
@@ -137,6 +135,8 @@ namespace DonBot.Dialogs
             {
                 if (choice.Value.Equals("Atras", StringComparison.OrdinalIgnoreCase))
                 {
+                    userProfile.IsNewUser = false;
+                    await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
                     stepContext.Context.Activity.Text = null;
                     await stepContext.Context.SendActivityAsync("¿Cuentame, en que te puedo ayudar?", cancellationToken: cancellationToken);
                     return await stepContext.EndDialogAsync();
@@ -343,10 +343,13 @@ namespace DonBot.Dialogs
                 if (result == true)
                 {
                     await stepContext.Context.SendActivityAsync("Cita cancelada correctamente.");
-                    string preparation = await _apiCalls.GetPreparationAsync(userProfile);
-                    if (preparation != null)
+                    List<string> names = await _apiCalls.GetPreparationAsync(userProfile);
+                    if (names != null)
                     {
-                        await stepContext.Context.SendActivityAsync(preparation);
+                        foreach (string name in names)
+                        {
+                            await stepContext.Context.SendActivityAsync(name);
+                        }
                     }
                     await ResetUserProfile(stepContext);
                     await stepContext.Context.SendActivityAsync("¿Te podemos ayudar en algo mas?");

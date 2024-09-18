@@ -57,11 +57,11 @@ namespace DonBot.Dialogs
                 GetAseguradoraPlanAsync,
                 GetMaritalStatusAsync,
                 GetAfiliationTypeAsync,
+                GetPatientTypeAsync,
+                HandlePatientTypeAsync,
                 GetCityNameAsync,
                 GetCityAsync,
                 HandleCitySelectionAsync,
-                GetPatientTypeAsync,
-                HandlePatientTypeAsync,
                 GetAddressAsync,
                 GetConfirmationAsync,
                 HandleCreateUserSelectionAsync,
@@ -607,10 +607,10 @@ namespace DonBot.Dialogs
             }
         }
 
-        private async Task<DialogTurnResult> GetCityNameAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
+        private async Task<DialogTurnResult> GetPatientTypeAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
         {
-            var choice = (FoundChoice)stepContext.Result;
             var userProfile = await _userStateAccessor.GetAsync(stepContext.Context, () => new UserProfileModel(), cancellationToken);
+            var choice = (FoundChoice)stepContext.Result;
             if (choice != null && choice.Value.Equals("Atras", StringComparison.OrdinalIgnoreCase))
             {
                 userProfile.MaritalStatus = null;
@@ -618,10 +618,6 @@ namespace DonBot.Dialogs
                 await _conversationState.SaveChangesAsync(stepContext.Context);
                 await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
                 return await stepContext.ReplaceDialogAsync(nameof(WaterfallDialog), null, cancellationToken);
-            }
-            if (userProfile.City != null)
-            {
-                return await stepContext.NextAsync();
             }
             if (userProfile.Affiliation == null)
             {
@@ -637,6 +633,100 @@ namespace DonBot.Dialogs
                     return await stepContext.EndDialogAsync();
                 }
             }
+            if (userProfile.PatientType != null)
+            {
+                userProfile.SaveData = false;
+                await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
+                return await stepContext.NextAsync();
+            }
+            try
+            {
+                List<JObject> Tipos = await _apiCalls.GetPatientTypeListAsync(userProfile.CodeCompany);
+                if (Tipos == null || !Tipos.Any())
+                {
+                    await stepContext.Context.SendActivityAsync("No se encontraron tipos de pacientes.", cancellationToken: cancellationToken);
+                    return await stepContext.ReplaceDialogAsync(nameof(WaterfallDialog), null, cancellationToken);
+                }
+                else
+                {
+                    List<string> TypeList = new List<string>();
+                    foreach (var servicio in Tipos)
+                    {
+                        TypeList.Add(servicio.Value<string>("name"));
+                    }
+                    var options = Tipos.Select(documentType => new
+                    {
+                        Id = documentType["id"].ToString(),
+                        Name = documentType["name"].ToString()
+                    }).ToArray(); var optionsList = options.ToList();
+                    var newOption = new
+                    {
+                        Id = "Atras",
+                        Name = "Atras"
+                    };
+
+                    optionsList.Add(newOption);
+                    var promptOptions = new PromptOptions
+                    {
+                        Prompt = MessageFactory.Text("Escoge el tipo de paciente:"),
+                        Choices = ChoiceFactory.ToChoices(optionsList.Select(option => option.Name).ToList()),
+                        Style = ListStyle.List
+                    };
+                    stepContext.Values["Pacientes"] = optionsList;
+                    await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
+                    return await stepContext.PromptAsync(nameof(ChoicePrompt), promptOptions, cancellationToken);
+                }
+
+            }
+            catch (Exception ex)
+            {
+                await stepContext.Context.SendActivityAsync("Error en la consulta");
+                return await stepContext.EndDialogAsync();
+            }
+        }
+
+
+        private async Task<DialogTurnResult> HandlePatientTypeAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
+        {
+            var userProfile = await _userStateAccessor.GetAsync(stepContext.Context, () => new UserProfileModel(), cancellationToken);
+            var choice = (FoundChoice)stepContext.Result;
+            if (userProfile.PatientType != null)
+            {
+                userProfile.SaveData = false;
+                await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
+                return await stepContext.NextAsync();
+            }
+            var options = (IEnumerable<dynamic>)stepContext.Values["Pacientes"];
+            var selectedOption = options.FirstOrDefault(option => option.Name == choice.Value);
+            if (selectedOption != null)
+            {
+                if (choice != null && choice.Value.Equals("Atras", StringComparison.OrdinalIgnoreCase))
+                {
+                    userProfile.Affiliation = null;
+                    stepContext.Context.Activity.Text = null;
+                    await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
+                    return await stepContext.ReplaceDialogAsync(nameof(WaterfallDialog), null, cancellationToken);
+                }
+                userProfile.PatientType = selectedOption.Id;
+                await _userStateAccessor.SetAsync(stepContext.Context, userProfile, cancellationToken);
+                await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
+
+                return await stepContext.NextAsync();
+            }
+            else
+            {
+                await stepContext.Context.SendActivityAsync("Opción seleccionada no válida.", cancellationToken: cancellationToken);
+                return await stepContext.EndDialogAsync();
+            }
+        }
+
+        private async Task<DialogTurnResult> GetCityNameAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
+        {
+            var userProfile = await _userStateAccessor.GetAsync(stepContext.Context, () => new UserProfileModel(), cancellationToken);
+            if (userProfile.City != null)
+            {
+                return await stepContext.NextAsync();
+            }
             await stepContext.Context.SendActivityAsync("Escribe tu ciudad de residencia");
             await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
             return new DialogTurnResult(DialogTurnStatus.Waiting);
@@ -649,7 +739,7 @@ namespace DonBot.Dialogs
             var userProfile = await _userStateAccessor.GetAsync(stepContext.Context, () => new UserProfileModel(), cancellationToken);
             if (stepContext.Context.Activity.Text != null && stepContext.Context.Activity.Text.ToString().Equals("Atras", StringComparison.OrdinalIgnoreCase))
             {
-                userProfile.Affiliation = null;
+                userProfile.PatientType = null;
                 stepContext.Context.Activity.Text = null;
                 await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
                 return await stepContext.ReplaceDialogAsync(nameof(WaterfallDialog), null, cancellationToken);
@@ -745,96 +835,6 @@ namespace DonBot.Dialogs
             }
         }
 
-        private async Task<DialogTurnResult> GetPatientTypeAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
-        {
-            var userProfile = await _userStateAccessor.GetAsync(stepContext.Context, () => new UserProfileModel(), cancellationToken);
-            if (userProfile.PatientType != null)
-            {
-                userProfile.SaveData = false;
-                await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
-                return await stepContext.NextAsync();
-            }
-            try
-            {
-                List<JObject> Tipos = await _apiCalls.GetPatientTypeListAsync(userProfile.CodeCompany);
-                if (Tipos == null || !Tipos.Any())
-                {
-                    await stepContext.Context.SendActivityAsync("No se encontraron tipos de pacientes.", cancellationToken: cancellationToken);
-                    return await stepContext.ReplaceDialogAsync(nameof(WaterfallDialog), null, cancellationToken);
-                }
-                else
-                {
-                    List<string> TypeList = new List<string>();
-                    foreach (var servicio in Tipos)
-                    {
-                        TypeList.Add(servicio.Value<string>("name"));
-                    }
-                    var options = Tipos.Select(documentType => new
-                    {
-                        Id = documentType["id"].ToString(),
-                        Name = documentType["name"].ToString()
-                    }).ToArray(); var optionsList = options.ToList();
-                    var newOption = new
-                    {
-                        Id = "Atras",
-                        Name = "Atras"
-                    };
-
-                    optionsList.Add(newOption);
-                    var promptOptions = new PromptOptions
-                    {
-                        Prompt = MessageFactory.Text("Escoge el tipo de paciente:"),
-                        Choices = ChoiceFactory.ToChoices(optionsList.Select(option => option.Name).ToList()),
-                        Style = ListStyle.List
-                    };
-                    stepContext.Values["Pacientes"] = optionsList;
-                    await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
-                    return await stepContext.PromptAsync(nameof(ChoicePrompt), promptOptions, cancellationToken);
-                }
-
-            }
-            catch (Exception ex)
-            {
-                await stepContext.Context.SendActivityAsync("Error en la consulta");
-                return await stepContext.EndDialogAsync();
-            }
-        }
-
-
-        private async Task<DialogTurnResult> HandlePatientTypeAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
-        {
-            var userProfile = await _userStateAccessor.GetAsync(stepContext.Context, () => new UserProfileModel(), cancellationToken);
-            var choice = (FoundChoice)stepContext.Result;
-            if (userProfile.PatientType != null)
-            {
-                userProfile.SaveData = false;
-                await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
-                return await stepContext.NextAsync();
-            }
-            var options = (IEnumerable<dynamic>)stepContext.Values["Pacientes"];
-            var selectedOption = options.FirstOrDefault(option => option.Name == choice.Value);
-            if (selectedOption != null)
-            {
-                if (choice != null && choice.Value.Equals("Atras", StringComparison.OrdinalIgnoreCase))
-                {
-                    userProfile.City = null;
-                    stepContext.Context.Activity.Text = null;
-                    await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
-                    return await stepContext.ReplaceDialogAsync(nameof(WaterfallDialog), null, cancellationToken);
-                }
-                userProfile.PatientType = selectedOption.Id;
-                await _userStateAccessor.SetAsync(stepContext.Context, userProfile, cancellationToken);
-                await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
-
-                return await stepContext.NextAsync();
-            }
-            else
-            {
-                await stepContext.Context.SendActivityAsync("Opción seleccionada no válida.", cancellationToken: cancellationToken);
-                return await stepContext.EndDialogAsync();
-            }
-        }
-
         private async Task<DialogTurnResult> GetAddressAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
         {
             var userProfile = await _userStateAccessor.GetAsync(stepContext.Context, () => new UserProfileModel(), cancellationToken);
@@ -859,7 +859,7 @@ namespace DonBot.Dialogs
             }
             if (stepContext.Context.Activity.Text != null && stepContext.Context.Activity.Text.ToString().Equals("Atras", StringComparison.OrdinalIgnoreCase))
             {
-                userProfile.PatientType = null;
+                userProfile.City = null;
                 stepContext.Context.Activity.Text = null;
                 await _conversationState.SaveChangesAsync(stepContext.Context);
                 await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);

@@ -6,6 +6,8 @@ using CoreBotTestDD.Models;
 using Newtonsoft.Json.Linq;
 using Microsoft.AspNetCore.DataProtection.KeyManagement;
 using System.Globalization;
+using DonBot.Models;
+using System.Linq;
 
 namespace CoreBotTestDD.Services
 {
@@ -20,7 +22,7 @@ namespace CoreBotTestDD.Services
             this.cluEndpoint = appConfiguration.Endpoint;
         }
 
-        public async Task<string> AnalyzeTextAsync(string text)
+        public async Task<ResponseCLU> AnalyzeTextAsync(string text)
         {
             text = RemoveCommasAndAccents(text);
             try
@@ -60,9 +62,33 @@ namespace CoreBotTestDD.Services
                     if (response.IsSuccessStatusCode)
                     {
                         string jsonResponse = await response.Content.ReadAsStringAsync();
+                        ResponseCLU responseModel = new();
                         JObject jsonRes = JObject.Parse(jsonResponse);
-                        string topIntent = jsonRes["result"]["prediction"]["topIntent"].ToString();
-                        return topIntent;
+                        responseModel.intent = jsonRes["result"]["prediction"]["topIntent"].ToString();
+                        JArray entities = (JArray)jsonRes["result"]?["prediction"]?["entities"];
+                        if (entities != null && entities.Count > 0)
+                        {
+                            var servicioItem = entities.FirstOrDefault(item => item["category"] != null && item["category"].ToString() == "Servicios");
+                            if (servicioItem != null)
+                            {
+                                var extraInformationService = servicioItem["extraInformation"] as JArray;
+                                if (extraInformationService != null && extraInformationService.Count > 0)
+                                {
+                                    var key = extraInformationService[0]["key"]?.ToString();
+                                    if (!string.IsNullOrEmpty(key))
+                                    {
+                                        responseModel.KeyServices = key;
+                                    }
+                                }
+
+                            }
+                            JObject firstEntity = (JObject)entities[0];
+                            responseModel.category = firstEntity["category"]?.ToString();
+                            JArray extraInformation = (JArray)firstEntity["extraInformation"];
+                            JObject firstExtraInfo = (JObject)extraInformation[0];
+                            responseModel.key = firstExtraInfo["key"]?.ToString();
+                        }
+                        return responseModel;
                     }
                     else
                     {

@@ -218,10 +218,21 @@ namespace DonBot.Dialogs
                 if (Servicios == null || !Servicios.Any())
                 {
                     await stepContext.Context.SendActivityAsync("Actualmente el profesional no cuenta con servicios para auto agendamiento, te invitamos a comunicarte con los numeros de atencion de la institucion.", cancellationToken: cancellationToken);
-                    await stepContext.Context.SendActivityAsync("¿Puedo ayudarte en algo más?", cancellationToken: cancellationToken);
-                    var cancellationReason = new { Reason = DialogReason.CancelCalled };
-                    await stepContext.CancelAllDialogsAsync(cancellationToken);
-                    return await stepContext.EndDialogAsync(cancellationReason, cancellationToken);
+                    var choices = new List<CustomChoice>
+                    {
+                     new CustomChoice { Value = "Si", Name = "Si" },
+                        new CustomChoice { Value = "No", Name = "No" },
+                        new CustomChoice { Value = "Atras", Name = "Atras" }
+                    };
+                    var promptOptions = new PromptOptions
+                    {
+                        Prompt = MessageFactory.Text("¿Deseas realizar la consulta con otro profesional?"),
+                        Choices = choices.Cast<Choice>().ToList(),
+                        Style = ListStyle.List
+                    };
+                    stepContext.Values["Servicios"] = choices;
+                    await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
+                    return await stepContext.PromptAsync(nameof(CustomChoicePrompt), promptOptions, cancellationToken);
                 }
                 else
                 {
@@ -305,7 +316,24 @@ namespace DonBot.Dialogs
                     await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
                     return await stepContext.ReplaceDialogAsync(nameof(WaterfallDialog), null, cancellationToken);
                 }
-                else if(selectedOption.Selected == "False")
+                else if (choice.Value.Equals("No", StringComparison.OrdinalIgnoreCase))
+                {
+                    await stepContext.Context.SendActivityAsync("¿Puedo ayudarte en algo más?", cancellationToken: cancellationToken);
+                    var cancellationReason = new { Reason = DialogReason.CancelCalled };
+                    await stepContext.CancelAllDialogsAsync(cancellationToken);
+                    return await stepContext.EndDialogAsync(cancellationReason, cancellationToken);
+                }
+                else if (choice.Value.Equals("Si", StringComparison.OrdinalIgnoreCase))
+                {
+                    userProfile.Servicios = null;
+                    userProfile.DoctorId = null;
+                    userProfile.DoctorName = null;
+                    stepContext.Context.Activity.Text = null;
+                    var cancellationReason = new { Reason = DialogReason.ReplaceCalled };
+                    await stepContext.CancelAllDialogsAsync(cancellationToken);
+                    return await stepContext.EndDialogAsync(cancellationReason, cancellationToken);
+                }
+                else if (selectedOption.Selected == "False")
                 {
                     await stepContext.Context.SendActivityAsync("Este servicio no se puede agendar por este medio, puede dirigirse a la pagina [URL](http://fundacionhomi.org/.co/) para realizar el agendamiento desde alli.", cancellationToken: cancellationToken);
                     stepContext.Context.Activity.Text = null;
@@ -313,6 +341,7 @@ namespace DonBot.Dialogs
                     userProfile.DoctorName = null;
                     await _conversationState.SaveChangesAsync(stepContext.Context);
                     await stepContext.Context.SendActivityAsync("¿Puedo ayudarte en algo más?", cancellationToken: cancellationToken);
+                    await ResetUserProfile(stepContext);
                     var cancellationReason = new { Reason = DialogReason.CancelCalled };
                     await stepContext.CancelAllDialogsAsync(cancellationToken);
                     return await stepContext.EndDialogAsync(cancellationReason, cancellationToken);
@@ -542,10 +571,16 @@ namespace DonBot.Dialogs
                 if (result == true)
                 {
                     await stepContext.Context.SendActivityAsync("Cita agendada correctamente.");
-                    string preparation = await _apiCalls.GetPreparationAsync(userProfile);
-                    if (preparation != null)
+                    DataValidation validator = new();
+                    string nameFormated;
+                    List<string> names = await _apiCalls.GetPreparationAsync(userProfile);
+                    if (names != null)
                     {
-                        await stepContext.Context.SendActivityAsync(preparation);
+                        foreach (string name in names)
+                        {
+                            nameFormated = validator.HtmlCleaner(name);
+                            await stepContext.Context.SendActivityAsync(nameFormated);
+                        }
                     }
                     await ResetUserProfile(stepContext);
                     await stepContext.Context.SendActivityAsync("¿Te podemos ayudar en algo mas?");
@@ -631,5 +666,9 @@ namespace DonBot.Dialogs
             await _userStateAccessor.SetAsync(context.Context, userProfile, cancellationToken);
             await _userState.SaveChangesAsync(context.Context, false, cancellationToken);
         }
+    }
+    public class CustomChoice : Choice
+    {
+        public string Name { get; set; }
     }
 }

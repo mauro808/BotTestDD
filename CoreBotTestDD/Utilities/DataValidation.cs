@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Text;
 using System.Text.RegularExpressions;
 
 namespace DonBot.Utilities
@@ -17,6 +18,56 @@ namespace DonBot.Utilities
             {
                 return "Numero de celular incorrecto. Recuerda no usar caracteres especiales o letras";
             }
+        }
+
+        public string HtmlCleaner(string html)
+        {
+            StringBuilder clean = new StringBuilder();
+            if (!string.IsNullOrWhiteSpace(html))
+            {
+ 
+                html = html.Replace("<br/>", $"{Environment.NewLine}");
+                bool allow = true;
+                char current;
+                char last = ' ';
+                const char Start = '<';
+                const char Stop = '>';
+                const char Empty = ' ';
+                StringBuilder original = new StringBuilder(html);
+                original.Replace("><", "> <");
+ 
+                for (int i = 0; i < original.Length; i++)
+                {
+                    current = original[i];
+                    if (current.Equals(Empty) && last.Equals(Empty))
+                    {
+                        continue;
+                    }
+ 
+                    if (current.Equals(Start))
+                    {
+                        allow = false;
+                    }
+ 
+                    if (allow)
+                    {
+                        last = current;
+                        clean.Append(current);
+                    }
+ 
+                    if (current.Equals(Stop))
+                    {
+                        allow = true;
+                    }
+                }
+ 
+ 
+                original.Replace("  ", " ");
+ 
+                clean.Replace("&nbsp;", "");
+            }
+ 
+            return clean.ToString();
         }
 
         public string ValidateDate (string date)

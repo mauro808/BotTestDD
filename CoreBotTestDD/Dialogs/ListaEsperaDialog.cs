@@ -97,6 +97,7 @@ namespace DonBot.Dialogs
                     {
                         await stepContext.Context.SendActivityAsync("Te hemos agregado correctamente a la lista de espera.", cancellationToken: cancellationToken);
                         await stepContext.Context.SendActivityAsync("¿Puedo ayudarte en algo más?", cancellationToken: cancellationToken);
+                        await ResetUserProfile(stepContext);
                         var cancellationReason = new { Reason = DialogReason.CancelCalled };
                         return await stepContext.EndDialogAsync(cancellationReason, cancellationToken);
 
@@ -105,6 +106,7 @@ namespace DonBot.Dialogs
                     {
                         await stepContext.Context.SendActivityAsync("Te hemos agregado correctamente a la lista de espera.", cancellationToken: cancellationToken);
                         await stepContext.Context.SendActivityAsync("¿Puedo ayudarte en algo más?", cancellationToken: cancellationToken);
+                        await ResetUserProfile(stepContext);
                         var cancellationReason = new { Reason = DialogReason.CancelCalled };
                         return await stepContext.EndDialogAsync(cancellationReason, cancellationToken);
                     }

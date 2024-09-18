@@ -6,6 +6,14 @@ namespace CoreBotTestDD.Models
     {
         public string UserId { get; set; }
 
+        public string AvailabilityChoice { get; set; }
+
+        public string IdCita { get; set; }
+    
+        public string CitaDate { get; set; }
+
+        public string NewCitaDate { get; set; }
+
         public string Company { get; set; }
 
         public string CodeCompany { get; set; }
@@ -51,6 +59,8 @@ namespace CoreBotTestDD.Models
         public string Aseguradora { get; set; }
 
         public string PlanAseguradora { get; set; }
+
+        public string ServiceName { get; set; }
 
         public string Servicios { get; set; }   
 
