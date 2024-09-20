@@ -76,7 +76,7 @@ namespace CoreBotTestDD.Dialogs
                 //userProfile.CodeCompany = await _clientMessages.GetClientSha("whatsapp:+573247496430");
                 //await stepContext.Context.SendActivityAsync(MessageFactory.Text(await _clientMessages.GetClientMessages("Bienvenida", userProfile.CodeCompany)));
                 //await stepContext.Context.SendActivityAsync(MessageFactory.Text(await _clientMessages.GetClientMessages("Tratamiento datos personales", userProfile.CodeCompany)));
-                await stepContext.Context.SendActivityAsync(MessageFactory.Text("Hola! Soy el asistente virtual de Fundacion SantaFe. Al continuar, aceptas nuestros términos y condiciones [URL](https://fundacionsantafedebogota.com/piensalo/portalpacientes/portalpacientes/portalpacientes/portalpacientes/educacion/examenes-diagnosticos/portalpacientes/examenes-diagnosticos/portalpacientes/examenes-diagnosticos/educacion/portalpacientes/portalpacientes/educacion/portalpacientes/examenes-diagnosticos/portalpacientes/portalpacientes/examenes-diagnosticos/politica-tratamiento-datos-personales). Te puedo ayudar a agendar y/o gestionar tus citas y pedir información. ¿Que deseas hacer? \n\n1- Agendar\n\n2- Reprogramar cita\n\n3- Cancelar Cita\n\n4- Obtener informacion"));
+                await stepContext.Context.SendActivityAsync(MessageFactory.Text("Hola! 😁 Soy el asistente virtual de xxx. Al continuar, aceptas nuestros términos y condiciones xxx. Te puedo ayudar a agendar y/o gestionar tus citas y pedir información. ¿Que deseas hacer? \n\n1- 🗓️ Agendar\n\n2- 🗓️ Reprogramar cita\n\n3- ❌Cancelar Cita\n\n4-  ℹ️ Obtener informacion"));
                 userProfile.IsNewUser = false;
             }
             await _userStateAccessor.SetAsync(stepContext.Context, userProfile, cancellationToken);
@@ -104,12 +104,12 @@ namespace CoreBotTestDD.Dialogs
             }
             else if (stepContext.Context.Activity.Text == "2" || stepContext.Context.Activity.Text.Equals("Reprogramar cita", StringComparison.OrdinalIgnoreCase))
             {
-                await stepContext.Context.SendActivityAsync("Muy bien, vamos a realizar el reagendamiento de una cita.", cancellationToken: cancellationToken);
+                await stepContext.Context.SendActivityAsync("Muy bien, vamos a realizar el 🗓️ reagendamiento de una cita.", cancellationToken: cancellationToken);
                 return await stepContext.BeginDialogAsync(nameof(ReagendamientoDialog), null, cancellationToken);
             }
             else if(stepContext.Context.Activity.Text == "4" || stepContext.Context.Activity.Text.Equals("obtener informacion", StringComparison.OrdinalIgnoreCase))
             {
-                await stepContext.Context.SendActivityAsync("Perfecto. ¿Que informacion necesitas? Si tengo respuesta para ello te dare la informacion.");
+                await stepContext.Context.SendActivityAsync("Perfecto. ¿Que información necesitas? Si tengo respuesta para ello te daré la información.ℹ️");
                 return await stepContext.NextAsync(null, cancellationToken);
             }
             var responseQna = await _cqaService.AnalyzeQuestionAsync(stepContext.Context.Activity.Text.ToString());
@@ -118,7 +118,7 @@ namespace CoreBotTestDD.Dialogs
                 await stepContext.Context.SendActivityAsync(responseQna.text);
                 if (responseQna.metadata != "static")
                 {
-                    await stepContext.Context.SendActivityAsync("¿Puedo ayudarte en algo mas?");
+                    await stepContext.Context.SendActivityAsync("¿Puedo ayudarte en algo mas🤓?");
                 }
             }
             else

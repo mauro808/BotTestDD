@@ -8,6 +8,8 @@ namespace CoreBotTestDD.Models
 
         public string AvailabilityChoice { get; set; }
 
+        public int AvailabilityChoiceMonth { get; set; } = 0;
+
         public string IdCita { get; set; }
     
         public string CitaDate { get; set; }

@@ -318,7 +318,7 @@ namespace DonBot.Dialogs
                 }
                 else if (choice.Value.Equals("No", StringComparison.OrdinalIgnoreCase))
                 {
-                    await stepContext.Context.SendActivityAsync("¿Puedo ayudarte en algo más?", cancellationToken: cancellationToken);
+                    await stepContext.Context.SendActivityAsync("¿Puedo ayudarte en algo mas🤓?", cancellationToken: cancellationToken);
                     var cancellationReason = new { Reason = DialogReason.CancelCalled };
                     await stepContext.CancelAllDialogsAsync(cancellationToken);
                     return await stepContext.EndDialogAsync(cancellationReason, cancellationToken);
@@ -340,7 +340,7 @@ namespace DonBot.Dialogs
                     userProfile.DoctorId = null;
                     userProfile.DoctorName = null;
                     await _conversationState.SaveChangesAsync(stepContext.Context);
-                    await stepContext.Context.SendActivityAsync("¿Puedo ayudarte en algo más?", cancellationToken: cancellationToken);
+                    await stepContext.Context.SendActivityAsync("¿Puedo ayudarte en algo mas🤓?", cancellationToken: cancellationToken);
                     await ResetUserProfile(stepContext);
                     var cancellationReason = new { Reason = DialogReason.CancelCalled };
                     await stepContext.CancelAllDialogsAsync(cancellationToken);
@@ -441,7 +441,7 @@ namespace DonBot.Dialogs
                 if (ScheduleAvailability == null || !ScheduleAvailability.Any())
                 {
                     await stepContext.Context.SendActivityAsync("No se encontro agenda disponible. ", cancellationToken: cancellationToken);
-                    await stepContext.Context.SendActivityAsync("¿Puedo ayudarte en algo mas? ", cancellationToken: cancellationToken);
+                    await stepContext.Context.SendActivityAsync("¿Puedo ayudarte en algo mas🤓?", cancellationToken: cancellationToken);
                     await ResetUserProfile(stepContext);
                     var cancellationReason = new { Reason = DialogReason.CancelCalled };
                     await stepContext.CancelAllDialogsAsync(cancellationToken);
@@ -566,7 +566,7 @@ namespace DonBot.Dialogs
             if (choice.Value.Equals("Si", StringComparison.OrdinalIgnoreCase))
             {
                 await stepContext.Context.SendActivityAsync("Agendando cita...");
-                bool result = await _apiCalls.PostCreateCitaAsync(userProfile, stepContext.Values["DataCita"]);
+                bool result = await _apiCalls.PostCreateCitaAsync(userProfile, stepContext.Values["DataCita"], stepContext.Values["DataCita"]);
                 await Task.Delay(3000);
                 if (result == true)
                 {

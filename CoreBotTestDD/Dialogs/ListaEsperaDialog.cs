@@ -63,7 +63,7 @@ namespace DonBot.Dialogs
         };
             var promptOptions = new PromptOptions
             {
-                Prompt = MessageFactory.Text("¿Deseas que te registremos en la lista de espera?"),
+                Prompt = MessageFactory.Text("¿Deseas que te registremos en la lista de espera 📋?"),
                 Choices = choices,
                 Style = ListStyle.List
             };
@@ -85,7 +85,7 @@ namespace DonBot.Dialogs
                     userProfile.Choice = false;
                     await ResetUserProfile(stepContext);
                     await _conversationState.SaveChangesAsync(stepContext.Context);
-                    await stepContext.Context.SendActivityAsync("¿Puedo ayudarte en algo más?", cancellationToken: cancellationToken);
+                    await stepContext.Context.SendActivityAsync("¿Puedo ayudarte en algo mas🤓?", cancellationToken: cancellationToken);
                     var cancellationReason = new { Reason = DialogReason.CancelCalled };
                     await stepContext.CancelAllDialogsAsync(cancellationToken);
                     return await stepContext.EndDialogAsync(cancellationReason, cancellationToken);
@@ -95,8 +95,8 @@ namespace DonBot.Dialogs
                     bool response = await _apiCalls.PostCreateListaEsperaAsync(userProfile);
                     if (response)
                     {
-                        await stepContext.Context.SendActivityAsync("Te hemos agregado correctamente a la lista de espera.", cancellationToken: cancellationToken);
-                        await stepContext.Context.SendActivityAsync("¿Puedo ayudarte en algo más?", cancellationToken: cancellationToken);
+                        await stepContext.Context.SendActivityAsync("📋 ✅Te hemos agregado correctamente a la lista de espera.", cancellationToken: cancellationToken);
+                        await stepContext.Context.SendActivityAsync("¿Puedo ayudarte en algo mas🤓?", cancellationToken: cancellationToken);
                         await ResetUserProfile(stepContext);
                         var cancellationReason = new { Reason = DialogReason.CancelCalled };
                         return await stepContext.EndDialogAsync(cancellationReason, cancellationToken);
@@ -104,8 +104,8 @@ namespace DonBot.Dialogs
                     }
                     else
                     {
-                        await stepContext.Context.SendActivityAsync("Te hemos agregado correctamente a la lista de espera.", cancellationToken: cancellationToken);
-                        await stepContext.Context.SendActivityAsync("¿Puedo ayudarte en algo más?", cancellationToken: cancellationToken);
+                        await stepContext.Context.SendActivityAsync("📋 ✅Te hemos agregado correctamente a la lista de espera.", cancellationToken: cancellationToken);
+                        await stepContext.Context.SendActivityAsync("¿Puedo ayudarte en algo mas🤓?", cancellationToken: cancellationToken);
                         await ResetUserProfile(stepContext);
                         var cancellationReason = new { Reason = DialogReason.CancelCalled };
                         return await stepContext.EndDialogAsync(cancellationReason, cancellationToken);

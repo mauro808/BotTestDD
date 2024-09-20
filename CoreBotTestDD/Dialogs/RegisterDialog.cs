@@ -114,7 +114,7 @@ namespace DonBot.Dialogs
                     stepContext.Context.Activity.Text = null;
                     userProfile.Choice = false;
                     await _conversationState.SaveChangesAsync(stepContext.Context);
-                    await stepContext.Context.SendActivityAsync("¿Puedo ayudarte en algo más?", cancellationToken: cancellationToken);
+                    await stepContext.Context.SendActivityAsync("¿Puedo ayudarte en algo mas🤓?", cancellationToken: cancellationToken);
                     var cancellationReason = new { Reason = DialogReason.CancelCalled };
                     await stepContext.CancelAllDialogsAsync(cancellationToken);
                     return await stepContext.EndDialogAsync(cancellationReason, cancellationToken);
@@ -190,7 +190,7 @@ namespace DonBot.Dialogs
                 return await stepContext.ReplaceDialogAsync(nameof(WaterfallDialog), null, cancellationToken);
             }
             userProfile.SaveData = true;
-            await stepContext.Context.SendActivityAsync("¿Cual es tu numero de celular? Recuerda que debe ir sin puntos, comas o espacios. (Ejemplo: 3102436543)");
+            await stepContext.Context.SendActivityAsync("¿Cual es tu numero de celular 📱? Recuerda que debe ir sin puntos, comas o espacios. (Ejemplo: 3102436543)");
             await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
             return new DialogTurnResult(DialogTurnStatus.Waiting);
         }
@@ -571,7 +571,7 @@ namespace DonBot.Dialogs
                 if (AfiliationType == null || !AfiliationType.Any())
                 {
                     await stepContext.Context.SendActivityAsync("Error en la consulta de tipos de afiliacion", cancellationToken: cancellationToken);
-                    await stepContext.Context.SendActivityAsync("¿Puedo ayudarte en algo mas? ", cancellationToken: cancellationToken);
+                    await stepContext.Context.SendActivityAsync("¿Puedo ayudarte en algo mas🤓? ", cancellationToken: cancellationToken);
                     return await stepContext.EndDialogAsync();
                 }
                 else
@@ -961,7 +961,7 @@ namespace DonBot.Dialogs
                     stepContext.Context.Activity.Text = null;
                     userProfile.Choice = false;
                     await _conversationState.SaveChangesAsync(stepContext.Context);
-                    await stepContext.Context.SendActivityAsync("Tu usuario ha sido creado con exito, puedes proceder con el agendamiento de la cita.", cancellationToken: cancellationToken);
+                    await stepContext.Context.SendActivityAsync("Muy bien 🥳, tu usuario ha sido creado con exito, puedes proceder con el agendamiento de la cita. ", cancellationToken: cancellationToken);
                     return await stepContext.EndDialogAsync();
                 }
             }

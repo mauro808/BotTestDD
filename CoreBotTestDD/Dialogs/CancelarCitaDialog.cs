@@ -104,7 +104,7 @@ namespace DonBot.Dialogs
 
                     var promptOptions = new PromptOptions
                     {
-                        Prompt = MessageFactory.Text("Para proceder, por favor identificate, ¿Cuál es tu tipo y documento de identidad?"),
+                        Prompt = MessageFactory.Text("Para continuar, por favor indicamos, ❔ ¿Cuál es tu tipo y documento de identidad?"),
                         Choices = ChoiceFactory.ToChoices(optionsList.Select(option => option.Name).ToList()),
                     };
 
@@ -178,7 +178,7 @@ namespace DonBot.Dialogs
                 await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
                 return await stepContext.NextAsync();
             }
-            await stepContext.Context.SendActivityAsync("Escribe el numero de tu documento sin puntos ni comas. (Ejemplo: 1001122345) Escribe atras si quieres cambiar tu informacion anterior.");
+            await stepContext.Context.SendActivityAsync("Escribe el número de tu documento ❔ sin puntos ni comas. (Ejemplo: 1001122345) Escribe atrás si quieres cambiar tu información anterior.");
             await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
             return new DialogTurnResult(DialogTurnStatus.Waiting);
         }
@@ -342,7 +342,7 @@ namespace DonBot.Dialogs
                 await Task.Delay(3000);
                 if (result == true)
                 {
-                    await stepContext.Context.SendActivityAsync("Cita cancelada correctamente.");
+                    await stepContext.Context.SendActivityAsync("Cita cancelada correctamente. ✅");
                     List<string> names = await _apiCalls.GetPreparationAsync(userProfile);
                     if (names != null)
                     {

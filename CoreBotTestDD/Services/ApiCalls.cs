@@ -16,6 +16,8 @@ using DonDoctor.ConfigurationProvider.Core;
 using System.Security.Policy;
 using System.Text.Json.Nodes;
 using System.Linq;
+using System.Globalization;
+using Microsoft.AspNetCore.Http;
 
 namespace CoreBotTestDD.Services
 {
@@ -610,7 +612,7 @@ namespace CoreBotTestDD.Services
                 };
             switch (baseSearch)
             {
-                case "1":
+                case "2":
                     int diasParaLunes = ((int)DayOfWeek.Monday - (int)fechaActual.DayOfWeek + 7) % 7;
                     if (diasParaLunes == 0)
                     {
@@ -620,7 +622,7 @@ namespace CoreBotTestDD.Services
                     fechaFormateada = proximoLunes.ToString("yyyy-MM-ddTHH:mm:ss");
                     query.Add($"DateFrom={fechaFormateada}");
                     break;
-                case "2":
+                case "3":
                     DateTime primerDiaProximoMes = new DateTime(fechaActual.Year, fechaActual.Month, 1).AddMonths(1);
                     fechaFormateada = primerDiaProximoMes.ToString("yyyy-MM-ddTHH:mm:ss");
                     query.Add($"DateFrom={fechaFormateada}");
@@ -642,7 +644,83 @@ namespace CoreBotTestDD.Services
                             return null;
                         }
                         string jsonResponse = await response.Content.ReadAsStringAsync();
-                        return JsonConvert.DeserializeObject<List<JObject>>(jsonResponse);
+                        List<JObject> schedules = JArray.Parse(jsonResponse).ToObject<List<JObject>>();
+                        HashSet<string> uniqueDates = new HashSet<string>();
+                        List<JObject> filteredSchedules = new List<JObject>();
+                        CultureInfo spanishCulture = new CultureInfo("es-ES");
+                        foreach (var schedule in schedules)
+                        {
+                            // Obtener la fecha sin la hora
+                            DateTime dateTime = DateTime.Parse(schedule["dateTime"].ToString());
+                            string formattedDate = dateTime.ToString("dddd dd 'de' MMMM", spanishCulture);
+
+                            // Si la fecha no está en el HashSet, agregarla y agregar el objeto a la lista
+                            if (uniqueDates.Add(formattedDate))
+                            {
+                                // Actualizar el campo "dateTime" solo con la fecha (opcional)
+                                schedule["dateTime"] = formattedDate;
+                                filteredSchedules.Add(schedule);
+                            }
+                        }
+                        return filteredSchedules;
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Error: {response.StatusCode}");
+                        return null;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Excepción: {ex.Message}");
+                    return null;
+                }
+            }
+
+        }
+
+        public async Task<List<JObject>> GetScheduleAvailabilitySpecificAsync(UserProfileModel userProfile, string fecha)
+        {
+            var baseUrl = "https://api-schedules-test-001.azurewebsites.net/ScheduleAvailability";
+            var query = new List<string>
+                {
+                    $"size=30",
+                    $"page=0",
+                    $"planId={userProfile.PlanAseguradora}",
+                    $"serviceId={userProfile.Servicios}",
+                    $"specialtyId={userProfile.especialidad}",
+                    $"available=true"
+                };
+            DateTime parsedDate = DateTime.ParseExact(fecha, "dddd dd 'de' MMMM", new CultureInfo("es-ES"));
+            string originalFormat = parsedDate.ToString("yyyy-MM-ddTHH:mm:ss");
+            query.Add($"DateFrom={originalFormat}");
+            query.Add($"DateTo={originalFormat}");
+            var fullUrl = $"{baseUrl}?{string.Join("&", query)}";
+            using (HttpClient client = new HttpClient())
+            {
+                try
+                {
+                    client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", await AutenticationAsync(userProfile.CodeCompany));
+                    HttpResponseMessage response = await client.GetAsync(fullUrl);
+
+                    if (response.IsSuccessStatusCode)
+                    {
+                        if (response.StatusCode.Equals("204"))
+                        {
+                            return null;
+                        }
+                        string jsonResponse = await response.Content.ReadAsStringAsync();
+                        List<JObject> schedules = JArray.Parse(jsonResponse).ToObject<List<JObject>>();
+                        foreach (var schedule in schedules)
+                        {
+                            // Obtener la fecha sin la hora
+                            DateTime dateTime = DateTime.Parse(schedule["dateTime"].ToString());
+                            string formattedTime = dateTime.ToString("hh:mm tt");
+
+                            // Si la fecha no está en el HashSet, agregarla y agregar el objeto a la lista
+                            schedule["dateTime"] = formattedTime;
+                        }
+                        return schedules;
                     }
                     else
                     {
@@ -762,12 +840,18 @@ namespace CoreBotTestDD.Services
 
         }
 
-        public async Task<bool> PostCreateCitaAsync(UserProfileModel userProfile, object data)
+        public async Task<bool> PostCreateCitaAsync(UserProfileModel userProfile, object data, object hour)
         {
             var url = "https://api-appointments-test-001.azurewebsites.net/Appointments";
             string dateTimeString = (string)data.GetType().GetProperty("DateTime").GetValue(data);
-            DateTime dateTime = DateTime.Parse(dateTimeString);
-            DateTime newDateTime = dateTime;
+            string dateFormat = "dddd dd 'de' MMMM";
+            string timeFormat = "hh:mm tt";
+            DateTime datePart = DateTime.ParseExact((string)data.GetType().GetProperty("DateTime").GetValue(data), dateFormat, new CultureInfo("es-ES"));
+            DateTime timePart = DateTime.ParseExact((string)hour.GetType().GetProperty("DateTime").GetValue(hour), timeFormat, new CultureInfo("en-US"));
+            DateTime combinedDateTime = new DateTime(datePart.Year, datePart.Month, datePart.Day,
+                                                 timePart.Hour, timePart.Minute, timePart.Second);
+            string formattedDateTime = combinedDateTime.ToString("yyyy-MM-ddTHH:mm:ss");
+            string formattedDateTimeTo = combinedDateTime.AddMinutes(30).ToString("yyyy-MM-ddTHH:mm:ss");
             var appointmentTypeIdProp = data.GetType().GetProperty("AppointmentTypeId");
             var userIdProp = data.GetType().GetProperty("UserId");
             var officeIdProp = data.GetType().GetProperty("OfficeId");
@@ -800,8 +884,8 @@ namespace CoreBotTestDD.Services
                         InsuranceID = int.Parse(userProfile.Aseguradora),
                         DoctorId = DoctorID,
                         ServiceID = int.Parse(userProfile.Servicios),
-                        DateFrom = dateTime,
-                        To = newDateTime.ToString("HH:mm:ss tt"),
+                        DateFrom = formattedDateTime,
+                        To = formattedDateTimeTo,
                         State = "P",
                         Message = "",
                         InsurancePlanID = int.Parse(userProfile.PlanAseguradora),

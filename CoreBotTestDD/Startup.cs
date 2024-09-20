@@ -93,6 +93,7 @@ namespace CoreBotTestDD
             services.AddSingleton<RegisterDialog>();
             services.AddSingleton<ListaEsperaDialog>();
             services.AddSingleton<ReagendamientoDialog>();
+            services.AddSingleton<ScheduleAvalaibilityByMonth>();
             services.AddSingleton<AgendarByDoctorDialog>();
             services.AddSingleton<CancelarCitaDialog>();
             //services.AddHostedService<InactivityBackgroundService>();
