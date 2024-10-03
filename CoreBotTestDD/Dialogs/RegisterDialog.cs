@@ -524,11 +524,16 @@ namespace DonBot.Dialogs
                     };
 
                     optionsList.Add(newOption);
+                    FindChoicesOptions findChoicesOptions = new()
+                    {
+                        AllowPartialMatches = true,
+                    };
                     var promptOptions = new PromptOptions
                     {
                         Prompt = MessageFactory.Text("Selecciona tu estado civil:"),
                         Choices = ChoiceFactory.ToChoices(optionsList.Select(option => option.Name).ToList()),
-                        Style = ListStyle.List
+                        Style = ListStyle.List,
+                        RecognizeLanguage = "es-es",
                     };
                     stepContext.Values["MaritalStatus"] = optionsList;
                     await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);

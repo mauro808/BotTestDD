@@ -104,7 +104,7 @@ namespace DonBot.Dialogs
                     }
                     else
                     {
-                        await stepContext.Context.SendActivityAsync("📋 ✅Te hemos agregado correctamente a la lista de espera.", cancellationToken: cancellationToken);
+                        await stepContext.Context.SendActivityAsync("📋 Error al agregarte a la lista de espera. Intenta mas tarde", cancellationToken: cancellationToken);
                         await stepContext.Context.SendActivityAsync("¿Puedo ayudarte en algo mas🤓?", cancellationToken: cancellationToken);
                         await ResetUserProfile(stepContext);
                         var cancellationReason = new { Reason = DialogReason.CancelCalled };

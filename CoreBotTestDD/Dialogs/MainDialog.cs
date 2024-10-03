@@ -76,7 +76,7 @@ namespace CoreBotTestDD.Dialogs
                 //userProfile.CodeCompany = await _clientMessages.GetClientSha("whatsapp:+573247496430");
                 //await stepContext.Context.SendActivityAsync(MessageFactory.Text(await _clientMessages.GetClientMessages("Bienvenida", userProfile.CodeCompany)));
                 //await stepContext.Context.SendActivityAsync(MessageFactory.Text(await _clientMessages.GetClientMessages("Tratamiento datos personales", userProfile.CodeCompany)));
-                await stepContext.Context.SendActivityAsync(MessageFactory.Text("Hola! 😁 Soy el asistente virtual de xxx. Al continuar, aceptas nuestros términos y condiciones xxx. Te puedo ayudar a agendar y/o gestionar tus citas y pedir información. ¿Que deseas hacer? \n\n1- 🗓️ Agendar\n\n2- 🗓️ Reprogramar cita\n\n3- ❌Cancelar Cita\n\n4-  ℹ️ Obtener informacion"));
+                await stepContext.Context.SendActivityAsync(MessageFactory.Text("Hola! 😁 Soy el asistente virtual Jarvis. Al continuar, aceptas nuestros términos y condiciones https://www.fsfb.edu.co/contenido/politica-de-tratamiento-de-datos-personales. Te puedo ayudar a agendar y/o gestionar tus citas y pedir información. ¿Que deseas hacer? \n\n1- 🗓️ Agendar\n\n2- 🗓️ Reprogramar cita\n\n3- ❌Cancelar Cita\n\n4-  ℹ️ Obtener informacion"));
                 userProfile.IsNewUser = false;
             }
             await _userStateAccessor.SetAsync(stepContext.Context, userProfile, cancellationToken);
@@ -124,9 +124,23 @@ namespace CoreBotTestDD.Dialogs
             else
             {
                 var generalScore = await _cluService.AnalyzeTextAsync(stepContext.Context.Activity.Text.ToString());
-                if (generalScore.intent == "Agendar")
+                if (generalScore.intent == "Agendar" || generalScore.key == "Agendamiento")
                 {
-                    await stepContext.Context.SendActivityAsync("Muy bien, vamos a agendar una cita.", cancellationToken: cancellationToken);
+                    if(generalScore.category != null && generalScore.category == "Servicio")
+                    {
+                        await stepContext.Context.SendActivityAsync("Comprendo, realizaremos un agendamiento de cita para el servicio de: "+generalScore.KeyServices, cancellationToken: cancellationToken);
+                        userProfile.ServiceName = generalScore.KeyServices;
+                        userProfile.TypeConsult = "Servicio";
+                    }else if (generalScore.category != null && generalScore.category == "Nombre")
+                    {
+                        await stepContext.Context.SendActivityAsync("Comprendo, realizaremos un agendamiento de cita con el doctor: " + generalScore.KeyServices, cancellationToken: cancellationToken);
+                        userProfile.DoctorName = generalScore.KeyServices;
+                        userProfile.TypeConsult = "Nombre del profesional";
+                    }
+                    else
+                    {
+                        await stepContext.Context.SendActivityAsync("Muy bien, vamos a agendar una cita.", cancellationToken: cancellationToken);
+                    }
                     return await stepContext.BeginDialogAsync(nameof(AgendarDialog), null, cancellationToken);
                 }
                 else if (generalScore.key == "Negacion")

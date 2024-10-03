@@ -20,6 +20,9 @@ using System;
 using DonDoctor.ConfigurationProvider.Core;
 using Microsoft.Extensions.Logging;
 using DonBot.Dialogs;
+using CoreBotTestDD.Models;
+using DonBot.Bots;
+using System.Net.Http;
 
 namespace CoreBotTestDD
 {
@@ -33,10 +36,11 @@ namespace CoreBotTestDD
                 options.SerializerSettings.MaxDepth = HttpHelper.BotMessageSerializerSettings.MaxDepth;
             });
             AppConfiguration appSettings = AppConfiguration.LoadAppSettings();
-
             // Create the Bot Framework Authentication to be used with the Bot Adapter.
             services.AddSingleton<InactivityMiddleware>();
+            services.AddSingleton<KustomerMiddleware>();
             services.AddApplicationInsightsTelemetry();
+            services.AddHttpClient();
             services.AddSingleton<IBotTelemetryClient, BotTelemetryClient>();
             services.AddSingleton<ITelemetryInitializer, OperationCorrelationTelemetryInitializer>();
             services.AddSingleton<ITelemetryInitializer, TelemetryBotIdInitializer>();
@@ -46,16 +50,14 @@ namespace CoreBotTestDD
             {
                 var auth = sp.GetRequiredService<BotFrameworkAuthentication>();
                 var logger = sp.GetRequiredService<ILogger<AdapterWithErrorHandler>>();
+                var KustomerMessage = sp.GetRequiredService<KustomerMiddleware>();
                 var inactivityMiddleware = sp.GetRequiredService<InactivityMiddleware>();
                 var conversationState = sp.GetRequiredService<ConversationState>();
                 var telemetryInsight = sp.GetRequiredService<TelemetryInitializerMiddleware>();
-                return new AdapterWithErrorHandler(auth, logger, inactivityMiddleware, telemetryInsight, conversationState);
+                var httpClientFactory = sp.GetRequiredService<IHttpClientFactory>();
+                return new AdapterWithErrorHandler(auth, logger, inactivityMiddleware, KustomerMessage, telemetryInsight, httpClientFactory, conversationState);
             });
             services.AddSingleton<BotFrameworkAuthentication, ConfigurationBotFrameworkAuthentication>();
-
-            // Create the Bot Adapter with error handling enabled.
-            services.AddSingleton<IBotFrameworkHttpAdapter, AdapterWithErrorHandler>();
-
 
             // Create the storage we'll be using for User and Conversation state. (Memory is great for testing purposes.)
             services.AddSingleton<IStorage, MemoryStorage>();
@@ -66,12 +68,19 @@ namespace CoreBotTestDD
                 var credentials = new AzureKeyCredential(apiKey);
                 return new TextAnalyticsClient(new Uri(endpoint), credentials);
             });
+            services.AddSingleton<IStatePropertyAccessor<UserProfileModel>>(sp =>
+            {
+                var userState = sp.GetRequiredService<UserState>();
+                return userState.CreateProperty<UserProfileModel>("UserProfile");
+            });
 
             services.AddSingleton(sp =>
             {
                 var textAnalyticsClient = sp.GetRequiredService<TextAnalyticsClient>();
                 var CluClient = sp.GetRequiredService<CLUService>();
-                return new CustomChoicePrompt(nameof(CustomChoicePrompt), textAnalyticsClient, CluClient);
+                var userState = sp.GetRequiredService<UserState>();
+                var userProfileModel = userState.CreateProperty<UserProfileModel>("UserProfile");
+                return new CustomChoicePrompt(nameof(CustomChoicePrompt), textAnalyticsClient, CluClient, userProfileModel);
             });
             services.AddSingleton(new CLUService(appSettings));
             services.AddSingleton(new CQAService(appSettings));

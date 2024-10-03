@@ -566,9 +566,9 @@ namespace DonBot.Dialogs
             if (choice.Value.Equals("Si", StringComparison.OrdinalIgnoreCase))
             {
                 await stepContext.Context.SendActivityAsync("Agendando cita...");
-                bool result = await _apiCalls.PostCreateCitaAsync(userProfile, stepContext.Values["DataCita"], stepContext.Values["DataCita"]);
+                string result = await _apiCalls.PostCreateCitaAsync(userProfile, stepContext.Values["DataCita"], stepContext.Values["DataCita"]);
                 await Task.Delay(3000);
-                if (result == true)
+                if (result == "true")
                 {
                     await stepContext.Context.SendActivityAsync("Cita agendada correctamente.");
                     DataValidation validator = new();
@@ -587,6 +587,12 @@ namespace DonBot.Dialogs
                     var cancellationReason = new { Reason = DialogReason.CancelCalled };
                     await stepContext.CancelAllDialogsAsync(cancellationToken);
                     return await stepContext.EndDialogAsync(cancellationReason, cancellationToken);
+                }
+                else if (result.Equals("limited"))
+                {
+                    await ResetUserProfile(stepContext);
+                    await stepContext.Context.SendActivityAsync("No hay cupos disponibles para el Mes, aseguradora, plan y la fecha seleccionada, no es posible crear la cita.");
+                    return await stepContext.EndDialogAsync();
                 }
                 else
                 {

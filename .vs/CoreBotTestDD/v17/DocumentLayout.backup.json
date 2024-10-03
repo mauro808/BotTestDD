@@ -1,0 +1,382 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "E:\\Projects\\BotTestDonDoctor\\CoreBotTestDD\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{050C370E-22CE-4346-9104-F681019EAE9E}|CoreBotTestDD\\DonBot.csproj|e:\\projects\\bottestdondoctor\\corebottestdd\\corebottestdd\\dialogs\\maindialog.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{050C370E-22CE-4346-9104-F681019EAE9E}|CoreBotTestDD\\DonBot.csproj|solutionrelative:corebottestdd\\dialogs\\maindialog.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{050C370E-22CE-4346-9104-F681019EAE9E}|CoreBotTestDD\\DonBot.csproj|e:\\projects\\bottestdondoctor\\corebottestdd\\corebottestdd\\services\\apicalls.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{050C370E-22CE-4346-9104-F681019EAE9E}|CoreBotTestDD\\DonBot.csproj|solutionrelative:corebottestdd\\services\\apicalls.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{050C370E-22CE-4346-9104-F681019EAE9E}|CoreBotTestDD\\DonBot.csproj|e:\\projects\\bottestdondoctor\\corebottestdd\\corebottestdd\\dialogs\\agendardialog.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{050C370E-22CE-4346-9104-F681019EAE9E}|CoreBotTestDD\\DonBot.csproj|solutionrelative:corebottestdd\\dialogs\\agendardialog.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{050C370E-22CE-4346-9104-F681019EAE9E}|CoreBotTestDD\\DonBot.csproj|e:\\projects\\bottestdondoctor\\corebottestdd\\corebottestdd\\dialogs\\listaesperadialog.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{050C370E-22CE-4346-9104-F681019EAE9E}|CoreBotTestDD\\DonBot.csproj|solutionrelative:corebottestdd\\dialogs\\listaesperadialog.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{050C370E-22CE-4346-9104-F681019EAE9E}|CoreBotTestDD\\DonBot.csproj|e:\\projects\\bottestdondoctor\\corebottestdd\\corebottestdd\\adapterwitherrorhandler.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{050C370E-22CE-4346-9104-F681019EAE9E}|CoreBotTestDD\\DonBot.csproj|solutionrelative:corebottestdd\\adapterwitherrorhandler.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{050C370E-22CE-4346-9104-F681019EAE9E}|CoreBotTestDD\\DonBot.csproj|e:\\projects\\bottestdondoctor\\corebottestdd\\corebottestdd\\controllers\\botcontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{050C370E-22CE-4346-9104-F681019EAE9E}|CoreBotTestDD\\DonBot.csproj|solutionrelative:corebottestdd\\controllers\\botcontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{050C370E-22CE-4346-9104-F681019EAE9E}|CoreBotTestDD\\DonBot.csproj|e:\\projects\\bottestdondoctor\\corebottestdd\\corebottestdd\\dialogs\\scheduleavalaibilitybymonth.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{050C370E-22CE-4346-9104-F681019EAE9E}|CoreBotTestDD\\DonBot.csproj|solutionrelative:corebottestdd\\dialogs\\scheduleavalaibilitybymonth.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{050C370E-22CE-4346-9104-F681019EAE9E}|CoreBotTestDD\\DonBot.csproj|e:\\projects\\bottestdondoctor\\corebottestdd\\corebottestdd\\dialogs\\agendarbydoctordialog.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{050C370E-22CE-4346-9104-F681019EAE9E}|CoreBotTestDD\\DonBot.csproj|solutionrelative:corebottestdd\\dialogs\\agendarbydoctordialog.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{050C370E-22CE-4346-9104-F681019EAE9E}|CoreBotTestDD\\DonBot.csproj|e:\\projects\\bottestdondoctor\\corebottestdd\\corebottestdd\\bots\\kustomermiddleware .cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{050C370E-22CE-4346-9104-F681019EAE9E}|CoreBotTestDD\\DonBot.csproj|solutionrelative:corebottestdd\\bots\\kustomermiddleware .cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{050C370E-22CE-4346-9104-F681019EAE9E}|CoreBotTestDD\\DonBot.csproj|e:\\projects\\bottestdondoctor\\corebottestdd\\corebottestdd\\startup.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{050C370E-22CE-4346-9104-F681019EAE9E}|CoreBotTestDD\\DonBot.csproj|solutionrelative:corebottestdd\\startup.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{050C370E-22CE-4346-9104-F681019EAE9E}|CoreBotTestDD\\DonBot.csproj|e:\\projects\\bottestdondoctor\\corebottestdd\\corebottestdd\\bots\\dialogbot.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{050C370E-22CE-4346-9104-F681019EAE9E}|CoreBotTestDD\\DonBot.csproj|solutionrelative:corebottestdd\\bots\\dialogbot.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{050C370E-22CE-4346-9104-F681019EAE9E}|CoreBotTestDD\\DonBot.csproj|e:\\projects\\bottestdondoctor\\corebottestdd\\corebottestdd\\dialogs\\cancelarcitadialog.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{050C370E-22CE-4346-9104-F681019EAE9E}|CoreBotTestDD\\DonBot.csproj|solutionrelative:corebottestdd\\dialogs\\cancelarcitadialog.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{050C370E-22CE-4346-9104-F681019EAE9E}|CoreBotTestDD\\DonBot.csproj|e:\\projects\\bottestdondoctor\\corebottestdd\\corebottestdd\\services\\cluservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{050C370E-22CE-4346-9104-F681019EAE9E}|CoreBotTestDD\\DonBot.csproj|solutionrelative:corebottestdd\\services\\cluservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{050C370E-22CE-4346-9104-F681019EAE9E}|CoreBotTestDD\\DonBot.csproj|e:\\projects\\bottestdondoctor\\corebottestdd\\corebottestdd\\services\\cqaservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{050C370E-22CE-4346-9104-F681019EAE9E}|CoreBotTestDD\\DonBot.csproj|solutionrelative:corebottestdd\\services\\cqaservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{050C370E-22CE-4346-9104-F681019EAE9E}|CoreBotTestDD\\DonBot.csproj|e:\\projects\\bottestdondoctor\\corebottestdd\\corebottestdd\\services\\customchoiceprompt.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{050C370E-22CE-4346-9104-F681019EAE9E}|CoreBotTestDD\\DonBot.csproj|solutionrelative:corebottestdd\\services\\customchoiceprompt.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{050C370E-22CE-4346-9104-F681019EAE9E}|CoreBotTestDD\\DonBot.csproj|e:\\projects\\bottestdondoctor\\corebottestdd\\corebottestdd\\dialogs\\reagendamientodialog.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{050C370E-22CE-4346-9104-F681019EAE9E}|CoreBotTestDD\\DonBot.csproj|solutionrelative:corebottestdd\\dialogs\\reagendamientodialog.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{050C370E-22CE-4346-9104-F681019EAE9E}|CoreBotTestDD\\DonBot.csproj|e:\\projects\\bottestdondoctor\\corebottestdd\\corebottestdd\\models\\userprofilemodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{050C370E-22CE-4346-9104-F681019EAE9E}|CoreBotTestDD\\DonBot.csproj|solutionrelative:corebottestdd\\models\\userprofilemodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\user\\AppData\\Local\\Temp\\.vsdbgsrc\\3b813e2945b3ee689180584c931cc6db3b7ca57c4466156b7f23ddcbd73e05ac\\WaterfallDialog.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{050C370E-22CE-4346-9104-F681019EAE9E}|CoreBotTestDD\\DonBot.csproj|e:\\projects\\bottestdondoctor\\corebottestdd\\corebottestdd\\dialogs\\dateresolverdialog.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{050C370E-22CE-4346-9104-F681019EAE9E}|CoreBotTestDD\\DonBot.csproj|solutionrelative:corebottestdd\\dialogs\\dateresolverdialog.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{050C370E-22CE-4346-9104-F681019EAE9E}|CoreBotTestDD\\DonBot.csproj|e:\\projects\\bottestdondoctor\\corebottestdd\\corebottestdd\\models\\cqamodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{050C370E-22CE-4346-9104-F681019EAE9E}|CoreBotTestDD\\DonBot.csproj|solutionrelative:corebottestdd\\models\\cqamodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{050C370E-22CE-4346-9104-F681019EAE9E}|CoreBotTestDD\\DonBot.csproj|e:\\projects\\bottestdondoctor\\corebottestdd\\corebottestdd\\models\\textanalisysmodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{050C370E-22CE-4346-9104-F681019EAE9E}|CoreBotTestDD\\DonBot.csproj|solutionrelative:corebottestdd\\models\\textanalisysmodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{050C370E-22CE-4346-9104-F681019EAE9E}|CoreBotTestDD\\DonBot.csproj|e:\\projects\\bottestdondoctor\\corebottestdd\\corebottestdd\\utilities\\datavalidation.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{050C370E-22CE-4346-9104-F681019EAE9E}|CoreBotTestDD\\DonBot.csproj|solutionrelative:corebottestdd\\utilities\\datavalidation.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 4,
+          "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "ListaEsperaDialog.cs",
+              "DocumentMoniker": "E:\\Projects\\BotTestDonDoctor\\CoreBotTestDD\\CoreBotTestDD\\Dialogs\\ListaEsperaDialog.cs",
+              "RelativeDocumentMoniker": "CoreBotTestDD\\Dialogs\\ListaEsperaDialog.cs",
+              "ToolTip": "E:\\Projects\\BotTestDonDoctor\\CoreBotTestDD\\CoreBotTestDD\\Dialogs\\ListaEsperaDialog.cs",
+              "RelativeToolTip": "CoreBotTestDD\\Dialogs\\ListaEsperaDialog.cs",
+              "ViewState": "AgIAAFsAAAAAAAAAAADgv2cAAAAVAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2024-09-09T12:31:39.071Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "AdapterWithErrorHandler.cs",
+              "DocumentMoniker": "E:\\Projects\\BotTestDonDoctor\\CoreBotTestDD\\CoreBotTestDD\\AdapterWithErrorHandler.cs",
+              "RelativeDocumentMoniker": "CoreBotTestDD\\AdapterWithErrorHandler.cs",
+              "ToolTip": "E:\\Projects\\BotTestDonDoctor\\CoreBotTestDD\\CoreBotTestDD\\AdapterWithErrorHandler.cs",
+              "RelativeToolTip": "CoreBotTestDD\\AdapterWithErrorHandler.cs",
+              "ViewState": "AgIAABQAAAAAAAAAAAA8wBoAAAAJAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2024-10-01T23:01:26.746Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "AgendarDialog.cs",
+              "DocumentMoniker": "E:\\Projects\\BotTestDonDoctor\\CoreBotTestDD\\CoreBotTestDD\\Dialogs\\AgendarDialog.cs",
+              "RelativeDocumentMoniker": "CoreBotTestDD\\Dialogs\\AgendarDialog.cs",
+              "ToolTip": "E:\\Projects\\BotTestDonDoctor\\CoreBotTestDD\\CoreBotTestDD\\Dialogs\\AgendarDialog.cs",
+              "RelativeToolTip": "CoreBotTestDD\\Dialogs\\AgendarDialog.cs",
+              "ViewState": "AgIAAJoEAAAAAAAAAAAtwKUEAAAQAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2024-09-27T16:34:13.988Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "ApiCalls.cs",
+              "DocumentMoniker": "E:\\Projects\\BotTestDonDoctor\\CoreBotTestDD\\CoreBotTestDD\\Services\\ApiCalls.cs",
+              "RelativeDocumentMoniker": "CoreBotTestDD\\Services\\ApiCalls.cs",
+              "ToolTip": "E:\\Projects\\BotTestDonDoctor\\CoreBotTestDD\\CoreBotTestDD\\Services\\ApiCalls.cs",
+              "RelativeToolTip": "CoreBotTestDD\\Services\\ApiCalls.cs",
+              "ViewState": "AgIAAIwDAAAAAAAAAAAYwJkDAAAUAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2024-09-18T00:44:07.832Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "MainDialog.cs",
+              "DocumentMoniker": "E:\\Projects\\BotTestDonDoctor\\CoreBotTestDD\\CoreBotTestDD\\Dialogs\\MainDialog.cs",
+              "RelativeDocumentMoniker": "CoreBotTestDD\\Dialogs\\MainDialog.cs",
+              "ToolTip": "E:\\Projects\\BotTestDonDoctor\\CoreBotTestDD\\CoreBotTestDD\\Dialogs\\MainDialog.cs",
+              "RelativeToolTip": "CoreBotTestDD\\Dialogs\\MainDialog.cs",
+              "ViewState": "AgIAAEUAAAAAAAAAAAA8wE4AAAD+AAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2024-09-27T16:30:37.077Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "BotController.cs",
+              "DocumentMoniker": "E:\\Projects\\BotTestDonDoctor\\CoreBotTestDD\\CoreBotTestDD\\Controllers\\BotController.cs",
+              "RelativeDocumentMoniker": "CoreBotTestDD\\Controllers\\BotController.cs",
+              "ToolTip": "E:\\Projects\\BotTestDonDoctor\\CoreBotTestDD\\CoreBotTestDD\\Controllers\\BotController.cs",
+              "RelativeToolTip": "CoreBotTestDD\\Controllers\\BotController.cs",
+              "ViewState": "AgIAABcAAAAAAAAAAAAQwCcAAAASAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2024-10-01T23:17:45.34Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
+              "Title": "ScheduleAvalaibilityByMonth.cs",
+              "DocumentMoniker": "E:\\Projects\\BotTestDonDoctor\\CoreBotTestDD\\CoreBotTestDD\\Dialogs\\ScheduleAvalaibilityByMonth.cs",
+              "RelativeDocumentMoniker": "CoreBotTestDD\\Dialogs\\ScheduleAvalaibilityByMonth.cs",
+              "ToolTip": "E:\\Projects\\BotTestDonDoctor\\CoreBotTestDD\\CoreBotTestDD\\Dialogs\\ScheduleAvalaibilityByMonth.cs",
+              "RelativeToolTip": "CoreBotTestDD\\Dialogs\\ScheduleAvalaibilityByMonth.cs",
+              "ViewState": "AgIAAHABAAAAAAAAAAAAAHwBAAAyAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2024-09-25T03:38:28.086Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 10,
+              "Title": "DialogBot.cs",
+              "DocumentMoniker": "E:\\Projects\\BotTestDonDoctor\\CoreBotTestDD\\CoreBotTestDD\\Bots\\DialogBot.cs",
+              "RelativeDocumentMoniker": "CoreBotTestDD\\Bots\\DialogBot.cs",
+              "ToolTip": "E:\\Projects\\BotTestDonDoctor\\CoreBotTestDD\\CoreBotTestDD\\Bots\\DialogBot.cs",
+              "RelativeToolTip": "CoreBotTestDD\\Bots\\DialogBot.cs",
+              "ViewState": "AgIAACoAAAAAAAAAAAAlwDMAAAAMAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2024-10-01T22:22:36.314Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 8,
+              "Title": "KustomerMiddleware .cs",
+              "DocumentMoniker": "E:\\Projects\\BotTestDonDoctor\\CoreBotTestDD\\CoreBotTestDD\\Bots\\KustomerMiddleware .cs",
+              "RelativeDocumentMoniker": "CoreBotTestDD\\Bots\\KustomerMiddleware .cs",
+              "ToolTip": "E:\\Projects\\BotTestDonDoctor\\CoreBotTestDD\\CoreBotTestDD\\Bots\\KustomerMiddleware .cs",
+              "RelativeToolTip": "CoreBotTestDD\\Bots\\KustomerMiddleware .cs",
+              "ViewState": "AgIAAA8AAAAAAAAAAAA1wCEAAAAJAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2024-10-01T22:47:21.428Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 7,
+              "Title": "AgendarByDoctorDialog.cs",
+              "DocumentMoniker": "E:\\Projects\\BotTestDonDoctor\\CoreBotTestDD\\CoreBotTestDD\\Dialogs\\AgendarByDoctorDialog.cs",
+              "RelativeDocumentMoniker": "CoreBotTestDD\\Dialogs\\AgendarByDoctorDialog.cs",
+              "ToolTip": "E:\\Projects\\BotTestDonDoctor\\CoreBotTestDD\\CoreBotTestDD\\Dialogs\\AgendarByDoctorDialog.cs",
+              "RelativeToolTip": "CoreBotTestDD\\Dialogs\\AgendarByDoctorDialog.cs",
+              "ViewState": "AgIAAD0CAAAAAAAAAAAAAE0CAAARAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2024-10-02T14:15:11.244Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 9,
+              "Title": "Startup.cs",
+              "DocumentMoniker": "E:\\Projects\\BotTestDonDoctor\\CoreBotTestDD\\CoreBotTestDD\\Startup.cs",
+              "RelativeDocumentMoniker": "CoreBotTestDD\\Startup.cs",
+              "ToolTip": "E:\\Projects\\BotTestDonDoctor\\CoreBotTestDD\\CoreBotTestDD\\Startup.cs",
+              "RelativeToolTip": "CoreBotTestDD\\Startup.cs",
+              "ViewState": "AgIAACoAAAAAAAAAAAAhwDIAAABPAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2024-10-01T22:55:04.054Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 14,
+              "Title": "CustomChoicePrompt.cs",
+              "DocumentMoniker": "E:\\Projects\\BotTestDonDoctor\\CoreBotTestDD\\CoreBotTestDD\\Services\\CustomChoicePrompt.cs",
+              "RelativeDocumentMoniker": "CoreBotTestDD\\Services\\CustomChoicePrompt.cs",
+              "ToolTip": "E:\\Projects\\BotTestDonDoctor\\CoreBotTestDD\\CoreBotTestDD\\Services\\CustomChoicePrompt.cs",
+              "RelativeToolTip": "CoreBotTestDD\\Services\\CustomChoicePrompt.cs",
+              "ViewState": "AgIAAEMAAAAAAAAAAAAYwE4AAAAUAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2024-09-25T18:22:07.852Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 12,
+              "Title": "Cluservice.cs",
+              "DocumentMoniker": "E:\\Projects\\BotTestDonDoctor\\CoreBotTestDD\\CoreBotTestDD\\Services\\Cluservice.cs",
+              "RelativeDocumentMoniker": "CoreBotTestDD\\Services\\Cluservice.cs",
+              "ToolTip": "E:\\Projects\\BotTestDonDoctor\\CoreBotTestDD\\CoreBotTestDD\\Services\\Cluservice.cs",
+              "RelativeToolTip": "CoreBotTestDD\\Services\\Cluservice.cs",
+              "ViewState": "AgIAADkAAAAAAAAAAAAYwEoAAAAgAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2024-09-25T18:13:14.207Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 11,
+              "Title": "CancelarCitaDialog.cs",
+              "DocumentMoniker": "E:\\Projects\\BotTestDonDoctor\\CoreBotTestDD\\CoreBotTestDD\\Dialogs\\CancelarCitaDialog.cs",
+              "RelativeDocumentMoniker": "CoreBotTestDD\\Dialogs\\CancelarCitaDialog.cs",
+              "ToolTip": "E:\\Projects\\BotTestDonDoctor\\CoreBotTestDD\\CoreBotTestDD\\Dialogs\\CancelarCitaDialog.cs",
+              "RelativeToolTip": "CoreBotTestDD\\Dialogs\\CancelarCitaDialog.cs",
+              "ViewState": "AgIAAO0AAAAAAAAAAAAcwPsAAAAQAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2024-09-04T20:00:25.785Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 13,
+              "Title": "CQAService.cs",
+              "DocumentMoniker": "E:\\Projects\\BotTestDonDoctor\\CoreBotTestDD\\CoreBotTestDD\\Services\\CQAService.cs",
+              "RelativeDocumentMoniker": "CoreBotTestDD\\Services\\CQAService.cs",
+              "ToolTip": "E:\\Projects\\BotTestDonDoctor\\CoreBotTestDD\\CoreBotTestDD\\Services\\CQAService.cs",
+              "RelativeToolTip": "CoreBotTestDD\\Services\\CQAService.cs",
+              "ViewState": "AgIAABcAAAAAAAAAAAAMwCYAAAAVAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2024-10-01T16:31:39.008Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 15,
+              "Title": "ReagendamientoDialog.cs",
+              "DocumentMoniker": "E:\\Projects\\BotTestDonDoctor\\CoreBotTestDD\\CoreBotTestDD\\Dialogs\\ReagendamientoDialog.cs",
+              "RelativeDocumentMoniker": "CoreBotTestDD\\Dialogs\\ReagendamientoDialog.cs",
+              "ToolTip": "E:\\Projects\\BotTestDonDoctor\\CoreBotTestDD\\CoreBotTestDD\\Dialogs\\ReagendamientoDialog.cs",
+              "RelativeToolTip": "CoreBotTestDD\\Dialogs\\ReagendamientoDialog.cs",
+              "ViewState": "AgIAAKwAAAAAAAAAAADgv7UAAABdAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2024-09-09T15:45:24.954Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 16,
+              "Title": "UserProfileModel.cs",
+              "DocumentMoniker": "E:\\Projects\\BotTestDonDoctor\\CoreBotTestDD\\CoreBotTestDD\\Models\\UserProfileModel.cs",
+              "RelativeDocumentMoniker": "CoreBotTestDD\\Models\\UserProfileModel.cs",
+              "ToolTip": "E:\\Projects\\BotTestDonDoctor\\CoreBotTestDD\\CoreBotTestDD\\Models\\UserProfileModel.cs",
+              "RelativeToolTip": "CoreBotTestDD\\Models\\UserProfileModel.cs",
+              "ViewState": "AgIAABcAAAAAAAAAAAAAwAoAAAA9AAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2024-09-19T13:17:23.383Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 17,
+              "Title": "WaterfallDialog.cs",
+              "DocumentMoniker": "C:\\Users\\user\\AppData\\Local\\Temp\\.vsdbgsrc\\3b813e2945b3ee689180584c931cc6db3b7ca57c4466156b7f23ddcbd73e05ac\\WaterfallDialog.cs",
+              "ToolTip": "C:\\Users\\user\\AppData\\Local\\Temp\\.vsdbgsrc\\3b813e2945b3ee689180584c931cc6db3b7ca57c4466156b7f23ddcbd73e05ac\\WaterfallDialog.cs",
+              "ViewState": "AQIAAEgAAAAAAAAAAAAtwFIAAAACAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2024-09-10T15:45:27.733Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 18,
+              "Title": "DateResolverDialog.cs",
+              "DocumentMoniker": "E:\\Projects\\BotTestDonDoctor\\CoreBotTestDD\\CoreBotTestDD\\Dialogs\\DateResolverDialog.cs",
+              "RelativeDocumentMoniker": "CoreBotTestDD\\Dialogs\\DateResolverDialog.cs",
+              "ToolTip": "E:\\Projects\\BotTestDonDoctor\\CoreBotTestDD\\CoreBotTestDD\\Dialogs\\DateResolverDialog.cs",
+              "RelativeToolTip": "CoreBotTestDD\\Dialogs\\DateResolverDialog.cs",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAAAoAAAAfAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2024-09-17T15:38:51.126Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 19,
+              "Title": "CQAModel.cs",
+              "DocumentMoniker": "E:\\Projects\\BotTestDonDoctor\\CoreBotTestDD\\CoreBotTestDD\\Models\\CQAModel.cs",
+              "RelativeDocumentMoniker": "CoreBotTestDD\\Models\\CQAModel.cs",
+              "ToolTip": "E:\\Projects\\BotTestDonDoctor\\CoreBotTestDD\\CoreBotTestDD\\Models\\CQAModel.cs",
+              "RelativeToolTip": "CoreBotTestDD\\Models\\CQAModel.cs",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2024-09-13T15:42:32.304Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 20,
+              "Title": "TextAnalisysModel.cs",
+              "DocumentMoniker": "E:\\Projects\\BotTestDonDoctor\\CoreBotTestDD\\CoreBotTestDD\\Models\\TextAnalisysModel.cs",
+              "RelativeDocumentMoniker": "CoreBotTestDD\\Models\\TextAnalisysModel.cs",
+              "ToolTip": "E:\\Projects\\BotTestDonDoctor\\CoreBotTestDD\\CoreBotTestDD\\Models\\TextAnalisysModel.cs",
+              "RelativeToolTip": "CoreBotTestDD\\Models\\TextAnalisysModel.cs",
+              "ViewState": "AQIAAAIAAAAAAAAAAAAxwAAAAAAAAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2024-09-13T15:42:46.654Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 21,
+              "Title": "DataValidation.cs",
+              "DocumentMoniker": "E:\\Projects\\BotTestDonDoctor\\CoreBotTestDD\\CoreBotTestDD\\Utilities\\DataValidation.cs",
+              "RelativeDocumentMoniker": "CoreBotTestDD\\Utilities\\DataValidation.cs",
+              "ToolTip": "E:\\Projects\\BotTestDonDoctor\\CoreBotTestDD\\CoreBotTestDD\\Utilities\\DataValidation.cs",
+              "RelativeToolTip": "CoreBotTestDD\\Utilities\\DataValidation.cs",
+              "ViewState": "AQIAAAAAAAAAAAAAAIBJwBYAAAAOAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2024-09-10T18:32:09.3Z"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

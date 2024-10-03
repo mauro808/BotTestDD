@@ -778,6 +778,25 @@ namespace CoreBotTestDD.Services
                             return null;
                         }
                         string jsonResponse = await response.Content.ReadAsStringAsync();
+                        List<JObject> schedules = JArray.Parse(jsonResponse).ToObject<List<JObject>>();
+                        HashSet<string> uniqueDates = new HashSet<string>();
+                        List<JObject> filteredSchedules = new List<JObject>();
+                        CultureInfo spanishCulture = new CultureInfo("es-ES");
+                        foreach (var schedule in schedules)
+                        {
+                            // Obtener la fecha sin la hora
+                            DateTime dateTime = DateTime.Parse(schedule["dateTime"].ToString());
+                            string formattedDate = dateTime.ToString("dddd dd 'de' MMMM", spanishCulture);
+
+                            // Si la fecha no está en el HashSet, agregarla y agregar el objeto a la lista
+                            if (uniqueDates.Add(formattedDate))
+                            {
+                                // Actualizar el campo "dateTime" solo con la fecha (opcional)
+                                schedule["dateTime"] = formattedDate;
+                                filteredSchedules.Add(schedule);
+                            }
+                        }
+                        return filteredSchedules;
                         return JsonConvert.DeserializeObject<List<JObject>>(jsonResponse);
                     }
                     else
@@ -840,14 +859,16 @@ namespace CoreBotTestDD.Services
 
         }
 
-        public async Task<bool> PostCreateCitaAsync(UserProfileModel userProfile, object data, object hour)
+        public async Task<string> PostCreateCitaAsync(UserProfileModel userProfile, object data, object hour)
         {
             var url = "https://api-appointments-test-001.azurewebsites.net/Appointments";
             string dateTimeString = (string)data.GetType().GetProperty("DateTime").GetValue(data);
             string dateFormat = "dddd dd 'de' MMMM";
-            string timeFormat = "hh:mm tt";
+            string[] timeFormats = { "hh:mm", "hh:mm tt", "HH:mm" };
+            string inputTime = (string)hour.GetType().GetProperty("DateTime").GetValue(hour);
+            DateTime timePart;
+            DateTime.TryParseExact(inputTime, timeFormats, new CultureInfo("en-US"), DateTimeStyles.None, out timePart);
             DateTime datePart = DateTime.ParseExact((string)data.GetType().GetProperty("DateTime").GetValue(data), dateFormat, new CultureInfo("es-ES"));
-            DateTime timePart = DateTime.ParseExact((string)hour.GetType().GetProperty("DateTime").GetValue(hour), timeFormat, new CultureInfo("en-US"));
             DateTime combinedDateTime = new DateTime(datePart.Year, datePart.Month, datePart.Day,
                                                  timePart.Hour, timePart.Minute, timePart.Second);
             string formattedDateTime = combinedDateTime.ToString("yyyy-MM-ddTHH:mm:ss");
@@ -902,29 +923,32 @@ namespace CoreBotTestDD.Services
                     {
                         if (response.StatusCode.Equals("204"))
                         {
-                            return false;
+                            return "false";
+                        }else if (response.StatusCode.Equals("400"))
+                        {
+                            return "limited";
                         }
                         string jsonResponse = await response.Content.ReadAsStringAsync();
                         bool responseRef = await PostRefreshCitaAsync(JObject.Parse(jsonResponse), userProfile.CodeCompany);
                         if(responseRef == true)
                         {
-                            return true;
+                            return "true";
                         }
                         else
                         {
-                            return false;
+                            return "false";
                         }
                     }
                     else
                     {
                         Console.WriteLine($"Error: {response.StatusCode}");
-                        return false;
+                        return "false";
                     }
                 }
                 catch (Exception ex)
                 {
                     Console.WriteLine($"Excepción: {ex.Message}");
-                    return false;
+                    return "false";
                 }
             }
 
@@ -1361,7 +1385,8 @@ namespace CoreBotTestDD.Services
                         planID = int.Parse(userProfile.PlanAseguradora),
                         entityID = int.Parse(userProfile.Aseguradora),
                         serviceID = int.Parse(userProfile.Servicios),
-                        createdUserID = int.Parse(userProfile.DocumentId),
+                        createdUserID = int.Parse(userProfile.UserId),
+                        Document = userProfile.DocumentId,
                         documentTypeID = int.Parse(userProfile.DocumentType),
                         name = userProfile.Name,
                         lastName = userProfile.LastName,

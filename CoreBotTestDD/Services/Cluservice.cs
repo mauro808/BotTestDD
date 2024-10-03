@@ -68,22 +68,35 @@ namespace CoreBotTestDD.Services
                         JArray entities = (JArray)jsonRes["result"]?["prediction"]?["entities"];
                         if (entities != null && entities.Count > 0)
                         {
-                            var servicioItem = entities.FirstOrDefault(item => item["category"] != null && item["category"].ToString() == "Servicios");
+                            var servicioItem = entities.FirstOrDefault(item => item["category"] != null && (item["category"].ToString() == "Servicios" || item["category"].ToString() == "Nombre"));
                             if (servicioItem != null)
                             {
                                 var extraInformationService = servicioItem["extraInformation"] as JArray;
                                 if (extraInformationService != null && extraInformationService.Count > 0)
                                 {
-                                    var key = extraInformationService[0]["key"]?.ToString();
-                                    if (!string.IsNullOrEmpty(key))
+                                    if (servicioItem["category"].ToString().Equals("Nombre"))
                                     {
-                                        responseModel.KeyServices = key;
+                                        var key = servicioItem["text"].ToString();
+                                        if (!string.IsNullOrEmpty(key))
+                                        {
+                                            responseModel.category = "Nombre";
+                                            responseModel.KeyServices = key;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        var key = extraInformationService[0]["key"]?.ToString();
+                                        if (!string.IsNullOrEmpty(key))
+                                        {
+                                            responseModel.category = "Servicio";
+                                            responseModel.KeyServices = key;
+                                        }
                                     }
                                 }
+                                
 
                             }
                             JObject firstEntity = (JObject)entities[0];
-                            responseModel.category = firstEntity["category"]?.ToString();
                             JArray extraInformation = (JArray)firstEntity["extraInformation"];
                             JObject firstExtraInfo = (JObject)extraInformation[0];
                             responseModel.key = firstExtraInfo["key"]?.ToString();
@@ -108,9 +121,10 @@ namespace CoreBotTestDD.Services
             }
         }
 
-        public async Task<string> AnalyzeTextEntitiesAsync(string text)
+        public async Task<ResponseCLUPrompt> AnalyzeTextEntitiesAsync(string text)
         {
             text = RemoveCommasAndAccents(text);
+            ResponseCLUPrompt responseModel = new();
             try
             {
                 // Configura la solicitud HTTP POST
@@ -152,6 +166,46 @@ namespace CoreBotTestDD.Services
                         JArray entities = (JArray)jsonRes["result"]?["prediction"]?["entities"];
                         if (entities != null && entities.Count > 0)
                         {
+                            foreach (var entity in entities)
+                            {
+                                // Validar si la entidad tiene "extraInformation"
+                                var category = entity["category"]?.ToString();
+                                var resolutions = (JArray)entity["resolutions"];
+                                if (category != null && text != null)
+                                {
+                                    if (category.Equals("Nombre"))
+                                    {
+                                        responseModel.SubType = category;
+                                        responseModel.Value = entity["text"]?.ToString();
+                                    }else if (category.Equals("Fechas"))
+                                    {
+                                        var extraInformationDate = (JArray)entity["extraInformation"];
+                                        string Datatype = extraInformationDate[0]["value"]?.ToString();
+                                        if(Datatype.Equals("datetime.time"))
+                                        {
+                                            string timeString = resolutions[0]["value"]?.ToString();
+                                            DateTime time = DateTime.Parse(timeString);
+                                            responseModel.SubType = "Fechas";
+                                            responseModel.Value = time.ToString("hh:mm");
+                                        }else if (Datatype.Equals("datetime.daterange"))
+                                        {
+                                            responseModel.Value = text;
+                                        }else if(entities.Count() > 1)
+                                        {
+                                            var secondResolution = resolutions[1];
+                                            var value = secondResolution["value"]?.ToString();
+                                            DateTime fecha = DateTime.ParseExact(value, "yyyy-MM-dd", CultureInfo.InvariantCulture);
+                                            CultureInfo cultura = new("es-ES");
+                                            responseModel.SubType = "Fechas";
+                                            responseModel.Value = fecha.ToString("dddd dd 'de' MMMM", cultura);
+                                        }
+                                        else
+                                        {
+                                            responseModel.Value = text;
+                                        }
+                                    }
+                                }
+                            }
                             // Acceder a la primera entidad
                             JObject firstEntity = (JObject)entities[0];
 
@@ -164,8 +218,8 @@ namespace CoreBotTestDD.Services
                                 string key = firstExtraInfo["key"]?.ToString();
 
                                 // Imprimir la clave
-                                Console.WriteLine($"Key: {key}");
-                                return key;
+                                responseModel.intent = key;
+                                return responseModel;
 
                             }
                             else

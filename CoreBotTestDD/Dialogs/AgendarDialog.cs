@@ -20,6 +20,7 @@ using CoreBotTestDD.Bots;
 using Microsoft.Bot.Builder.Dialogs.Prompts;
 using DonBot.Dialogs;
 using DonBot.Utilities;
+using DonBot.Models;
 
 namespace CoreBotTestDD.Dialogs
 {
@@ -288,6 +289,16 @@ namespace CoreBotTestDD.Dialogs
         private async Task<DialogTurnResult> HandleInsuranceUserSelectionAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
         {
             var userProfile = await _userStateAccessor.GetAsync(stepContext.Context, () => new UserProfileModel(), cancellationToken);
+            var cancellationReason = stepContext.Result as dynamic;
+            try
+            {
+                if (cancellationReason.Reason != null && cancellationReason.Reason == DialogReason.CancelCalled)
+                {
+                    await ResetUserProfile(stepContext, cancellationToken);
+                    return await stepContext.EndDialogAsync();
+                }
+            }
+            catch (Exception e) { };
             var choiceResult = stepContext.Result as FoundChoice;
             if (userProfile.Aseguradora != null && choiceResult == null)
             {
@@ -581,6 +592,10 @@ namespace CoreBotTestDD.Dialogs
                 }
                 else
                 {
+                    if(userProfile.ServiceName != null)
+                    {
+                        return await stepContext.NextAsync();
+                    }
                     userProfile.TypeConsult = "Service";
                     await stepContext.Context.SendActivityAsync("¿Qué servicio deseas agendar 🗓️? (Ejemplo: Cardiología) \n\n Escribe atrás si quieres cambiar tu información anterior.");
                     userProfile.SaveData = false;
@@ -637,7 +652,7 @@ namespace CoreBotTestDD.Dialogs
             try
             {
                 List<JObject> Servicios;
-                string text;
+                ResponseCLUPrompt text;
                 if (userProfile.ServiceName != null)
                 {
                     text = await _cluService.AnalyzeTextEntitiesAsync(userProfile.ServiceName);
@@ -648,7 +663,7 @@ namespace CoreBotTestDD.Dialogs
                 }
                 if (text != null)
                 {
-                    Servicios = await _apiCalls.GetServicesAsync(text, userProfile.CodeCompany);
+                    Servicios = await _apiCalls.GetServicesAsync(text.intent, userProfile.CodeCompany);
                 }
                 else
                 {
@@ -666,18 +681,27 @@ namespace CoreBotTestDD.Dialogs
                     {
                         servicios.Add(servicio.Value<string>("name"));
                     }
-                    var options = Servicios.Select(documentType => new
+                    int currentPage = userProfile.CurrentPage;
+                    int itemsPerPage = 6;
+                    var paginatedSchedule = Servicios.Skip(currentPage * itemsPerPage).Take(itemsPerPage).ToList();
+                    var options = paginatedSchedule.Select(documentType => new
                     {
                         Id = documentType["id"].ToString(),
                         Name = documentType["name"].ToString()
-                    }).ToArray(); var optionsList = options.ToList();
-                    var newOption = new
+                    }).ToArray(); 
+                    var optionsList = options.ToList();
+                    if (Servicios.Count > (currentPage + 1) * itemsPerPage)
                     {
-                        Id = "Atras",
-                        Name = "Atras"
-                    };
-
-                    optionsList.Add(newOption);
+                        var nextPageOption = new { Id = "SiguientePágina", Name = "Siguiente Página" };
+                        optionsList.Add(nextPageOption);
+                    }
+                    if (currentPage > 0)
+                    {
+                        var previousPageOption = new { Id = "PaginaAnterior", Name = "Página Anterior" };
+                        optionsList.Add(previousPageOption);
+                    }
+                    var backOption = new { Id = "Atras", Name = "Atras" };
+                    optionsList.Add(backOption);
                     var promptOptions = new PromptOptions
                     {
                         Prompt = MessageFactory.Text("Selecciona un servicio:"),
@@ -715,6 +739,20 @@ namespace CoreBotTestDD.Dialogs
                 {
                     userProfile.ServiceName = null;
                     stepContext.Context.Activity.Text = null;
+                    await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
+                    return await stepContext.ReplaceDialogAsync(nameof(WaterfallDialog), null, cancellationToken);
+                }
+                else if (choice.Value.Equals("Siguiente Página", StringComparison.OrdinalIgnoreCase))
+                {
+                    userProfile.CurrentPage++;
+                    await _userStateAccessor.SetAsync(stepContext.Context, userProfile, cancellationToken);
+                    await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
+                    return await stepContext.ReplaceDialogAsync(nameof(WaterfallDialog), null, cancellationToken);
+                }
+                else if (choice.Value.Equals("Pagina Anterior", StringComparison.OrdinalIgnoreCase))
+                {
+                    userProfile.CurrentPage--;
+                    await _userStateAccessor.SetAsync(stepContext.Context, userProfile, cancellationToken);
                     await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
                     return await stepContext.ReplaceDialogAsync(nameof(WaterfallDialog), null, cancellationToken);
                 }
@@ -1058,6 +1096,15 @@ namespace CoreBotTestDD.Dialogs
         {
             var userProfile = await _userStateAccessor.GetAsync(stepContext.Context, () => new UserProfileModel(), cancellationToken);
             var cancellationReason = stepContext.Result as dynamic;
+            try
+            {
+                if (cancellationReason.Reason != null && cancellationReason.Reason == DialogReason.CancelCalled)
+                {
+                    await ResetUserProfile(stepContext, cancellationToken);
+                    return await stepContext.EndDialogAsync();
+                }
+            }
+            catch (Exception e) { };
             var choice = (FoundChoice)stepContext.Result;
             if (choice != null && choice.Value.Equals("Atras", StringComparison.OrdinalIgnoreCase))
             {
@@ -1140,9 +1187,9 @@ namespace CoreBotTestDD.Dialogs
             if (choice.Value.Equals("Si", StringComparison.OrdinalIgnoreCase))
             {
                 await stepContext.Context.SendActivityAsync("Agendando cita...");
-                bool result = await _apiCalls.PostCreateCitaAsync(userProfile, stepContext.Values["DataCita"], stepContext.Values["DataCitaHour"]);
+                string result = await _apiCalls.PostCreateCitaAsync(userProfile, stepContext.Values["DataCita"], stepContext.Values["DataCitaHour"]);
                 await Task.Delay(3000);
-                if (result == true)
+                if (result == "true")
                 {
                     await stepContext.Context.SendActivityAsync("Cita agendada correctamente.");
                     DataValidation validator = new();
@@ -1159,6 +1206,11 @@ namespace CoreBotTestDD.Dialogs
                     await stepContext.Context.SendActivityAsync("Informacion de tu cita:\n\n Fecha: "+ (string)stepContext.Values["DataCita"].GetType().GetProperty("DateTime").GetValue(stepContext.Values["DataCita"])+ "\n\n Doctor: "+ (string)stepContext.Values["DataCita"].GetType().GetProperty("DoctorName").GetValue(stepContext.Values["DataCita"]));
                     await ResetUserProfile(stepContext);
                     await stepContext.Context.SendActivityAsync("¿Te podemos ayudar en algo mas?");
+                    return await stepContext.EndDialogAsync();
+                }else if (result.Equals("limited"))
+                {
+                    await ResetUserProfile(stepContext);
+                    await stepContext.Context.SendActivityAsync("No hay cupos disponibles para el Mes, aseguradora, plan y la fecha seleccionada, no es posible crear la cita.");
                     return await stepContext.EndDialogAsync();
                 }
                 else
