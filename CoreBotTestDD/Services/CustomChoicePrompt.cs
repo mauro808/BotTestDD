@@ -39,6 +39,10 @@ public class CustomChoicePrompt : ChoicePrompt
         }
         IList<Choice> list = options.Choices ?? new List<Choice>();
         PromptRecognizerResult<FoundChoice> promptRecognizerResult = new PromptRecognizerResult<FoundChoice>();
+        if (turnContext.Responded == true)
+        {
+            return promptRecognizerResult;
+        }
         if (turnContext.Activity.Type == "message")
         {
             Activity activity = turnContext.Activity;
@@ -97,6 +101,10 @@ public class CustomChoicePrompt : ChoicePrompt
                             promptRecognizerResult.Succeeded = true;
                             promptRecognizerResult.Value = list2[0].Resolution;
                         }
+                    }
+                    if(promptRecognizerResult.Succeeded == false)
+                    {
+                        await turnContext.SendActivityAsync("Lo siento, no he reconocido tu respuesta. Intenta de nuevo");
                     }
                 }
             }

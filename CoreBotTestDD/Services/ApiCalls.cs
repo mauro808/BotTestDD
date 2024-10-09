@@ -330,7 +330,10 @@ namespace CoreBotTestDD.Services
                             return null;
                         }
                         string jsonResponse = await response.Content.ReadAsStringAsync();
-                        return JsonConvert.DeserializeObject<List<JObject>>(jsonResponse);
+                        List<JObject> jsonObjectList = JsonConvert.DeserializeObject<List<JObject>>(jsonResponse);
+                        List<JObject> filteredList = jsonObjectList.Where(obj => obj["hidden"]?.ToObject<bool>() == false)
+                        .ToList();
+                        return filteredList;
                     }
                     else
                     {
@@ -432,7 +435,10 @@ namespace CoreBotTestDD.Services
                     if (response.IsSuccessStatusCode)
                     {
                         string data = await response.Content.ReadAsStringAsync();
-                        return JsonConvert.DeserializeObject<List<JObject>>(data);
+                        List<JObject> jsonObjectList = JsonConvert.DeserializeObject<List<JObject>>(data);
+                        List<JObject> filteredList = jsonObjectList.Where(obj => obj["hidden"]?.ToObject<bool>() == false)
+                        .ToList();
+                        return filteredList;
                     }
                     else
                     {

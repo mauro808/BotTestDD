@@ -37,7 +37,6 @@ namespace DonBot.Bots
         {
             var httpClient = _httpClientFactory.CreateClient();
             var url = "https://your-kustomer-instance.com/api/v1/messages";
-
             var content = new StringContent(JsonConvert.SerializeObject(new
             {
                 from = "Bot",

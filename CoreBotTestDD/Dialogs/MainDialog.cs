@@ -76,7 +76,7 @@ namespace CoreBotTestDD.Dialogs
                 //userProfile.CodeCompany = await _clientMessages.GetClientSha("whatsapp:+573247496430");
                 //await stepContext.Context.SendActivityAsync(MessageFactory.Text(await _clientMessages.GetClientMessages("Bienvenida", userProfile.CodeCompany)));
                 //await stepContext.Context.SendActivityAsync(MessageFactory.Text(await _clientMessages.GetClientMessages("Tratamiento datos personales", userProfile.CodeCompany)));
-                await stepContext.Context.SendActivityAsync(MessageFactory.Text("Hola! 😁 Soy el asistente virtual Jarvis. Al continuar, aceptas nuestros términos y condiciones https://www.fsfb.edu.co/contenido/politica-de-tratamiento-de-datos-personales. Te puedo ayudar a agendar y/o gestionar tus citas y pedir información. ¿Que deseas hacer? \n\n1- 🗓️ Agendar\n\n2- 🗓️ Reprogramar cita\n\n3- ❌Cancelar Cita\n\n4-  ℹ️ Obtener informacion"));
+                await stepContext.Context.SendActivityAsync(MessageFactory.Text("Hola! 😁 Soy el asistente virtual Jarvis. Al continuar, aceptas nuestros términos y condiciones https://bit.ly/3ZWksYa. Te puedo ayudar a agendar y/o gestionar tus citas y pedir información. ¿Que deseas hacer? \n\n1- 🗓️ Agendar\n\n2- 🗓️ Reprogramar cita\n\n3- ❌Cancelar Cita\n\n4-  ℹ️ Obtener informacion"));
                 userProfile.IsNewUser = false;
             }
             await _userStateAccessor.SetAsync(stepContext.Context, userProfile, cancellationToken);

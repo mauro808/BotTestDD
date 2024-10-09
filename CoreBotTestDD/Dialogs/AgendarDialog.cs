@@ -538,7 +538,8 @@ namespace CoreBotTestDD.Dialogs
         {
             new Choice { Value = "Nombre del profesional" },
             new Choice { Value = "Servicio" },
-            new Choice { Value = "Atras" }
+            new Choice { Value = "Atras" },
+            new Choice { Value = "Cancelar" }
         };
             var promptOptions = new PromptOptions
             {
@@ -589,6 +590,12 @@ namespace CoreBotTestDD.Dialogs
                     userProfile.TypeConsult = "Doctor";
                     await _conversationState.SaveChangesAsync(stepContext.Context);
                     return await stepContext.BeginDialogAsync(nameof(AgendarByDoctorDialog), null, cancellationToken);
+                }
+                else if (choice.Value.Equals("Cancelar", StringComparison.OrdinalIgnoreCase))
+                {
+                    await stepContext.Context.SendActivityAsync("¿Te podemos ayudar en algo mas?");
+                    await ResetUserProfile(stepContext, cancellationToken);
+                    return await stepContext.EndDialogAsync();
                 }
                 else
                 {
@@ -660,6 +667,7 @@ namespace CoreBotTestDD.Dialogs
                 else
                 {
                     text = await _cluService.AnalyzeTextEntitiesAsync(stepContext.Context.Activity.Text.ToString());
+                    userProfile.ServiceName = stepContext.Context.Activity.Text.ToString();
                 }
                 if (text != null)
                 {
@@ -672,6 +680,7 @@ namespace CoreBotTestDD.Dialogs
                 if (Servicios == null || !Servicios.Any())
                 {
                     await stepContext.Context.SendActivityAsync("No se encontraron servicios disponibles.", cancellationToken: cancellationToken);
+                    userProfile.ServiceName = null;
                     return await stepContext.ReplaceDialogAsync(nameof(WaterfallDialog), null, cancellationToken);
                 }
                 else
@@ -738,6 +747,7 @@ namespace CoreBotTestDD.Dialogs
                 if (choice != null && choice.Value.Equals("Atras", StringComparison.OrdinalIgnoreCase))
                 {
                     userProfile.ServiceName = null;
+                    userProfile.CurrentPage = 0;
                     stepContext.Context.Activity.Text = null;
                     await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
                     return await stepContext.ReplaceDialogAsync(nameof(WaterfallDialog), null, cancellationToken);
@@ -794,6 +804,7 @@ namespace CoreBotTestDD.Dialogs
                 if (especialidades == null || !especialidades.Any())
                 {
                     await stepContext.Context.SendActivityAsync("No se encontraron especialidades disponibles.", cancellationToken: cancellationToken);
+                    userProfile.Servicios = null;
                     return await stepContext.ReplaceDialogAsync(nameof(WaterfallDialog), null, cancellationToken);
                 }
                 else
@@ -1268,10 +1279,14 @@ namespace CoreBotTestDD.Dialogs
         {
             var userProfile = await _userStateAccessor.GetAsync(Context.Context, () => new UserProfileModel(), cancellationToken);
             string message;
+            DataValidation dataValidation = new();
             if (string.IsNullOrEmpty(userProfile.DocumentId))
             {
-                userProfile.DocumentId = data;
-                message = "";
+                message = dataValidation.ValidateDocument(data);
+                if (message == "")
+                {
+                    userProfile.DocumentId = data;
+                }
             }
             else
             {

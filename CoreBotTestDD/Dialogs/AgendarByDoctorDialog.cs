@@ -214,7 +214,7 @@ namespace DonBot.Dialogs
             }
             try
             {
-                List<JObject> Servicios = await _apiCalls.GetServicesByDoctorAsync(userProfile.Aseguradora, userProfile.CodeCompany);
+                List<JObject> Servicios = await _apiCalls.GetServicesByDoctorAsync(userProfile.DoctorId, userProfile.CodeCompany);
                 if (Servicios == null || !Servicios.Any())
                 {
                     await stepContext.Context.SendActivityAsync("Actualmente el profesional no cuenta con servicios para auto agendamiento, te invitamos a comunicarte con los numeros de atencion de la institucion.", cancellationToken: cancellationToken);
@@ -298,6 +298,7 @@ namespace DonBot.Dialogs
                 if (choice != null && choice.Value.Equals("Atras", StringComparison.OrdinalIgnoreCase))
                 {
                     userProfile.DoctorId = null;
+                    userProfile.CurrentPage = 0;
                     stepContext.Context.Activity.Text = null;
                     await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
                     return await stepContext.ReplaceDialogAsync(nameof(WaterfallDialog), null, cancellationToken);

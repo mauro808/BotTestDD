@@ -9,8 +9,8 @@ namespace DonBot.Utilities
 
         public string ValidatePhone(string text)
         {
-            string pattern = @"^\d+$";
-            if(Regex.IsMatch(text, pattern))
+            string pattern = @"^\d{10}$";
+            if (Regex.IsMatch(text, pattern))
             {
                 return "";
             }
@@ -94,6 +94,15 @@ namespace DonBot.Utilities
             }
 
             return "Formato de correo electronico incorrecto. Recuerda escribir un correo valido. Ejemplo: example@correo.com";
+        }
+
+        public string ValidateDocument(string text)
+        {
+            if (text.Length >= 5 && text.Length <= 16)
+            {
+                return "";
+            }
+            return "Este documento no es valido";
         }
     }
 }

@@ -98,8 +98,11 @@ namespace CoreBotTestDD.Services
                             }
                             JObject firstEntity = (JObject)entities[0];
                             JArray extraInformation = (JArray)firstEntity["extraInformation"];
-                            JObject firstExtraInfo = (JObject)extraInformation[0];
-                            responseModel.key = firstExtraInfo["key"]?.ToString();
+                            if(extraInformation != null)
+                            {
+                                JObject firstExtraInfo = (JObject)extraInformation[0];
+                                responseModel.key = firstExtraInfo["key"]?.ToString();
+                            }
                         }
                         return responseModel;
                     }

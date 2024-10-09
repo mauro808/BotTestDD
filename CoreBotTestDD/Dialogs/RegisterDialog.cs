@@ -966,7 +966,7 @@ namespace DonBot.Dialogs
                     stepContext.Context.Activity.Text = null;
                     userProfile.Choice = false;
                     await _conversationState.SaveChangesAsync(stepContext.Context);
-                    await stepContext.Context.SendActivityAsync("Muy bien 🥳, tu usuario ha sido creado con exito, puedes proceder con el agendamiento de la cita. ", cancellationToken: cancellationToken);
+                    await stepContext.Context.SendActivityAsync("¡Muy bien! 🥳 hemos finalizado tu registro, ahora te invitamos a continuar con el proceso de agendamiento", cancellationToken: cancellationToken);
                     return await stepContext.EndDialogAsync();
                 }
             }
