@@ -893,6 +893,16 @@ namespace CoreBotTestDD.Dialogs
         {
 
             var userProfile = await _userStateAccessor.GetAsync(stepContext.Context, () => new UserProfileModel(), cancellationToken);
+            var cancellationReasonInit = stepContext.Result as dynamic;
+            try
+            {
+                if (cancellationReasonInit.Reason != null && cancellationReasonInit.Reason == DialogReason.CancelCalled)
+                {
+                    await ResetUserProfile(stepContext, cancellationToken);
+                    return await stepContext.EndDialogAsync();
+                }
+            }
+            catch (Exception e) { };
             var choice = stepContext.Result as FoundChoice;
             if (stepContext.Values.ContainsKey("DataCita"))
             {

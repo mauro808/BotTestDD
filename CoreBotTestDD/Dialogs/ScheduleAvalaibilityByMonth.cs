@@ -177,6 +177,18 @@ namespace DonBot.Dialogs
         private async Task<DialogTurnResult> HandleScheduleAvailabilityAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
         {
             var userProfile = await _userStateAccessor.GetAsync(stepContext.Context, () => new UserProfileModel(), cancellationToken);
+            var cancellationReasonInit = stepContext.Result as dynamic;
+            try
+            {
+                if (cancellationReasonInit.Reason != null && cancellationReasonInit.Reason == DialogReason.CancelCalled)
+                {
+                    await ResetUserProfile(stepContext, cancellationToken);
+                    var cancellationReason = new { Reason = DialogReason.CancelCalled };
+                    await stepContext.CancelAllDialogsAsync(cancellationToken);
+                    return await stepContext.EndDialogAsync(cancellationReason, cancellationToken);
+                }
+            }
+            catch (Exception e) { };
             var options = (IEnumerable<dynamic>)stepContext.Values["ScheduleAvailability"];
             var choice = (FoundChoice)stepContext.Result;
             var selectedOption = options.FirstOrDefault(option => option.DateTime == choice.Value);
@@ -273,7 +285,6 @@ namespace DonBot.Dialogs
         private async Task<DialogTurnResult> HandleScheduleAvailabilitySpecificAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
         {
             var userProfile = await _userStateAccessor.GetAsync(stepContext.Context, () => new UserProfileModel(), cancellationToken);
-            var cancellationReason = stepContext.Result as dynamic;
             var choice = (FoundChoice)stepContext.Result;
             if (choice != null && choice.Value.Equals("Atras", StringComparison.OrdinalIgnoreCase))
             {
@@ -344,8 +355,8 @@ namespace DonBot.Dialogs
 
         private async Task<DialogTurnResult> HandleConfirmationCitaAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
         {
-            var options = (IEnumerable<dynamic>)stepContext.Values["ScheduleAvailability"];
             var userProfile = await _userStateAccessor.GetAsync(stepContext.Context, () => new UserProfileModel(), cancellationToken);
+            var options = (IEnumerable<dynamic>)stepContext.Values["ScheduleAvailability"];
             var choice = (FoundChoice)stepContext.Result;
             var selectedOption = options.FirstOrDefault(option => option.DateTime == choice.Value);
             if (choice != null && choice.Value.Equals("Atras", StringComparison.OrdinalIgnoreCase))
