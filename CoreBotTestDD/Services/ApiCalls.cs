@@ -458,9 +458,9 @@ namespace CoreBotTestDD.Services
             }
         }
 
-        public async Task<List<JObject>> GetServicesByDoctorAsync(string text, string clientCode)
+        public async Task<List<JObject>> GetServicesByDoctorAsync(string text, string clientCode, string InsurancePlan)
         {
-            string ServicesEndpoint = "https://api-services-test-001.azurewebsites.net/Services/GetFilters?userId=" + text;
+            string ServicesEndpoint = "https://api-services-test-001.azurewebsites.net/Services/GetFilters?userId=" + text+ "&GetAvailableBySchedule=true&InsurancePlanId=" + InsurancePlan;
             try
             {
 
@@ -605,17 +605,35 @@ namespace CoreBotTestDD.Services
         public async Task<List<JObject>> GetScheduleAvailabilityAsync(UserProfileModel userProfile, string baseSearch)
         {
             var baseUrl = "https://api-schedules-test-001.azurewebsites.net/ScheduleAvailability";
-            DateTime fechaActual = DateTime.Now;
+            TimeZoneInfo colombiaTimeZone = TimeZoneInfo.FindSystemTimeZoneById("SA Pacific Standard Time");
+            DateTime fechaActual = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, colombiaTimeZone);
             string fechaFormateada;
-            var query = new List<string>
+            var query = new List<string> { };
+            if(userProfile.DoctorId != null)
+            {
+                query = new List<string>
                 {
-                    $"size=30",
+                    $"size=400",
+                    $"page=0",
+                    $"planId={userProfile.PlanAseguradora}",
+                    $"serviceId={userProfile.Servicios}",
+                    $"specialtyId={userProfile.especialidad}",
+                    $"doctorId={userProfile.DoctorId}",
+                    $"available=true"
+                };
+            }
+            else
+            {
+                query = new List<string>
+                {
+                    $"size=400",
                     $"page=0",
                     $"planId={userProfile.PlanAseguradora}",
                     $"serviceId={userProfile.Servicios}",
                     $"specialtyId={userProfile.especialidad}",
                     $"available=true"
                 };
+            }
             switch (baseSearch)
             {
                 case "2":
@@ -625,12 +643,12 @@ namespace CoreBotTestDD.Services
                         diasParaLunes = 7;
                     };
                     DateTime proximoLunes = fechaActual.AddDays(diasParaLunes);
-                    fechaFormateada = proximoLunes.ToString("yyyy-MM-ddTHH:mm:ss");
+                    fechaFormateada = proximoLunes.ToString("yyyy-MM-ddTHH:00:00");
                     query.Add($"DateFrom={fechaFormateada}");
                     break;
                 case "3":
                     DateTime primerDiaProximoMes = new DateTime(fechaActual.Year, fechaActual.Month, 1).AddMonths(1);
-                    fechaFormateada = primerDiaProximoMes.ToString("yyyy-MM-ddTHH:mm:ss");
+                    fechaFormateada = primerDiaProximoMes.ToString("yyyy-MM-ddTHH:00:00");
                     query.Add($"DateFrom={fechaFormateada}");
                     break;
 
@@ -685,7 +703,7 @@ namespace CoreBotTestDD.Services
 
         }
 
-        public async Task<List<JObject>> GetScheduleAvailabilitySpecificAsync(UserProfileModel userProfile, string fecha)
+        public async Task<List<JObject>> GetScheduleAvailabilitySpecificAsync(UserProfileModel userProfile)
         {
             var baseUrl = "https://api-schedules-test-001.azurewebsites.net/ScheduleAvailability";
             var query = new List<string>
@@ -697,8 +715,10 @@ namespace CoreBotTestDD.Services
                     $"specialtyId={userProfile.especialidad}",
                     $"available=true"
                 };
-            DateTime parsedDate = DateTime.ParseExact(fecha, "dddd dd 'de' MMMM", new CultureInfo("es-ES"));
-            string originalFormat = parsedDate.ToString("yyyy-MM-ddTHH:mm:ss");
+            TimeZoneInfo colombiaTimeZone = TimeZoneInfo.FindSystemTimeZoneById("SA Pacific Standard Time");
+            DateTime parsedDate = DateTime.ParseExact(userProfile.CitaDate, "dddd dd 'de' MMMM", new CultureInfo("es-ES"));
+            DateTime colombiaParsedDate = TimeZoneInfo.ConvertTime(parsedDate, colombiaTimeZone);
+            string originalFormat = colombiaParsedDate.ToString("yyyy-MM-ddTHH:mm:ss");
             query.Add($"DateFrom={originalFormat}");
             query.Add($"DateTo={originalFormat}");
             var fullUrl = $"{baseUrl}?{string.Join("&", query)}";
@@ -721,9 +741,7 @@ namespace CoreBotTestDD.Services
                         {
                             // Obtener la fecha sin la hora
                             DateTime dateTime = DateTime.Parse(schedule["dateTime"].ToString());
-                            string formattedTime = dateTime.ToString("hh:mm tt");
-
-                            // Si la fecha no está en el HashSet, agregarla y agregar el objeto a la lista
+                            string formattedTime = dateTime.ToString("hh:mm tt", new CultureInfo("es-CO"));
                             schedule["dateTime"] = formattedTime;
                         }
                         return schedules;
@@ -746,9 +764,11 @@ namespace CoreBotTestDD.Services
         public async Task<List<JObject>> GetScheduleAvailabilityByMonthAsync(UserProfileModel userProfile, int mes)
         {
             var baseUrl = "https://api-schedules-test-001.azurewebsites.net/ScheduleAvailability";
+            TimeZoneInfo colombiaTimeZone = TimeZoneInfo.FindSystemTimeZoneById("SA Pacific Standard Time");
+            DateTime fechaActualColombia = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, colombiaTimeZone);
             int anioSeleccionado;
-            int anioActual = DateTime.Now.Year;
-            int mesActual = DateTime.Now.Month;
+            int anioActual = fechaActualColombia.Year;
+            int mesActual = fechaActualColombia.Month;
             if (mes < mesActual)
             {
                 anioSeleccionado = anioActual + 1;
@@ -803,7 +823,6 @@ namespace CoreBotTestDD.Services
                             }
                         }
                         return filteredSchedules;
-                        return JsonConvert.DeserializeObject<List<JObject>>(jsonResponse);
                     }
                     else
                     {
@@ -820,19 +839,40 @@ namespace CoreBotTestDD.Services
 
         }
 
-        public async Task<List<JObject>> GetScheduleAvailabilityByDoctorAsync(UserProfileModel userProfile)
+        public async Task<List<JObject>> GetScheduleAvailabilityByDoctorAsync(UserProfileModel userProfile, string baseSearch)
         {
             var baseUrl = "https://api-schedules-test-001.azurewebsites.net/ScheduleAvailability";
+            TimeZoneInfo colombiaTimeZone = TimeZoneInfo.FindSystemTimeZoneById("SA Pacific Standard Time");
+            DateTime fechaActual = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, colombiaTimeZone);
+            string fechaFormateada;
             var query = new List<string>
                 {
-                    $"size=30",
+                    $"size=400",
                     $"page=0",
                     $"planId={userProfile.PlanAseguradora}",
                     $"serviceId={userProfile.Servicios}",
                     $"specialtyId={userProfile.especialidad}",
-                    $"doctorId={userProfile.DoctorId}",
                     $"available=true"
                 };
+            switch (baseSearch)
+            {
+                case "2":
+                    int diasParaLunes = ((int)DayOfWeek.Monday - (int)fechaActual.DayOfWeek + 7) % 7;
+                    if (diasParaLunes == 0)
+                    {
+                        diasParaLunes = 7;
+                    };
+                    DateTime proximoLunes = fechaActual.AddDays(diasParaLunes);
+                    fechaFormateada = proximoLunes.ToString("yyyy-MM-ddTHH:00:00");
+                    query.Add($"DateFrom={fechaFormateada}");
+                    break;
+                case "3":
+                    DateTime primerDiaProximoMes = new DateTime(fechaActual.Year, fechaActual.Month, 1).AddMonths(1);
+                    fechaFormateada = primerDiaProximoMes.ToString("yyyy-MM-ddTHH:00:00");
+                    query.Add($"DateFrom={fechaFormateada}");
+                    break;
+
+            }
             var fullUrl = $"{baseUrl}?{string.Join("&", query)}";
             using (HttpClient client = new HttpClient())
             {
@@ -848,7 +888,25 @@ namespace CoreBotTestDD.Services
                             return null;
                         }
                         string jsonResponse = await response.Content.ReadAsStringAsync();
-                        return JsonConvert.DeserializeObject<List<JObject>>(jsonResponse);
+                        List<JObject> schedules = JArray.Parse(jsonResponse).ToObject<List<JObject>>();
+                        HashSet<string> uniqueDates = new HashSet<string>();
+                        List<JObject> filteredSchedules = new List<JObject>();
+                        CultureInfo spanishCulture = new CultureInfo("es-ES");
+                        foreach (var schedule in schedules)
+                        {
+                            // Obtener la fecha sin la hora
+                            DateTime dateTime = DateTime.Parse(schedule["dateTime"].ToString());
+                            string formattedDate = dateTime.ToString("dddd dd 'de' MMMM", spanishCulture);
+
+                            // Si la fecha no está en el HashSet, agregarla y agregar el objeto a la lista
+                            if (uniqueDates.Add(formattedDate))
+                            {
+                                // Actualizar el campo "dateTime" solo con la fecha (opcional)
+                                schedule["dateTime"] = formattedDate;
+                                filteredSchedules.Add(schedule);
+                            }
+                        }
+                        return filteredSchedules;
                     }
                     else
                     {
@@ -865,26 +923,30 @@ namespace CoreBotTestDD.Services
 
         }
 
-        public async Task<string> PostCreateCitaAsync(UserProfileModel userProfile, object data, object hour)
+        public async Task<string> PostCreateCitaAsync(UserProfileModel userProfile, object hour)
         {
             var url = "https://api-appointments-test-001.azurewebsites.net/Appointments";
-            string dateTimeString = (string)data.GetType().GetProperty("DateTime").GetValue(data);
+            string dateTimeString = userProfile.CitaDate;
             string dateFormat = "dddd dd 'de' MMMM";
-            string[] timeFormats = { "hh:mm", "hh:mm tt", "HH:mm" };
+            string[] timeFormats = { "hh:mm", "hh:mm tt", "HH:mm", "h:mm tt", "hh:mm TT" };
             string inputTime = (string)hour.GetType().GetProperty("DateTime").GetValue(hour);
             DateTime timePart;
-            DateTime.TryParseExact(inputTime, timeFormats, new CultureInfo("en-US"), DateTimeStyles.None, out timePart);
-            DateTime datePart = DateTime.ParseExact((string)data.GetType().GetProperty("DateTime").GetValue(data), dateFormat, new CultureInfo("es-ES"));
+            bool isTimeParsed = DateTime.TryParseExact(inputTime, timeFormats, new CultureInfo("es-CO"), DateTimeStyles.None, out timePart);
+            if (!isTimeParsed)
+            {
+                throw new ArgumentException("Formato de hora no válido en 'hour.DateTime'.");
+            }
+            DateTime datePart = DateTime.ParseExact(dateTimeString, dateFormat, new CultureInfo("es-ES"));
             DateTime combinedDateTime = new DateTime(datePart.Year, datePart.Month, datePart.Day,
                                                  timePart.Hour, timePart.Minute, timePart.Second);
             string formattedDateTime = combinedDateTime.ToString("yyyy-MM-ddTHH:mm:ss");
             string formattedDateTimeTo = combinedDateTime.AddMinutes(30).ToString("yyyy-MM-ddTHH:mm:ss");
-            var appointmentTypeIdProp = data.GetType().GetProperty("AppointmentTypeId");
-            var userIdProp = data.GetType().GetProperty("UserId");
-            var officeIdProp = data.GetType().GetProperty("OfficeId");
-            string appointmentTypeIdStr = appointmentTypeIdProp?.GetValue(data) as string;
-            string DoctorId = userIdProp?.GetValue(data) as string;
-            string officeIdStr = officeIdProp?.GetValue(data) as string;
+            var appointmentTypeIdProp = hour.GetType().GetProperty("AppointmentTypeId");
+            var userIdProp = hour.GetType().GetProperty("UserId");
+            var officeIdProp = hour.GetType().GetProperty("OfficeId");
+            string appointmentTypeIdStr = appointmentTypeIdProp?.GetValue(hour) as string;
+            string DoctorId = userIdProp?.GetValue(hour) as string;
+            string officeIdStr = officeIdProp?.GetValue(hour) as string;
             if (!int.TryParse(appointmentTypeIdStr, out int appointmentTypeId))
             {
                 throw new ArgumentException("AppointmentTypeId no es un entero válido.");

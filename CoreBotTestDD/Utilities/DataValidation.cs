@@ -82,7 +82,7 @@ namespace DonBot.Utilities
                 }
             }
 
-            return "Formato de fecha incorrecto. Recuerda colocar una fecha valida en el formato AAAA-MM-DD. Ejemplo: 1999-02-13";
+            return "El formato de fecha ingresado es incorrecto (AAAA-MM-DD)";
         }
 
         public string ValidateEmail(string text)

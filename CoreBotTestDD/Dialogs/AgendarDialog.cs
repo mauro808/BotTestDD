@@ -300,51 +300,45 @@ namespace CoreBotTestDD.Dialogs
             }
             catch (Exception e) { };
             var choiceResult = stepContext.Result as FoundChoice;
-            if (userProfile.Aseguradora != null && choiceResult == null)
+            if ((userProfile.Aseguradora != null && choiceResult == null) || (userProfile.InsuranceName != null && userProfile.InsuranceConsult == true))
             {
                 return await stepContext.NextAsync();
             }
             userProfile.InsuranceInclude = false;
             var choice = (FoundChoice)stepContext.Result;
-            if (choice != null)
+            if (choice != null && choice.Value.Equals("Atras", StringComparison.OrdinalIgnoreCase))
             {
-                if (choice.Value.Equals("Si", StringComparison.OrdinalIgnoreCase))
+                stepContext.Context.Activity.Text = null;
+                userProfile.Aseguradora = null;
+                userProfile.PlanAseguradora = null;
+                userProfile.DocumentId = null;
+                userProfile.Name = null;
+                await _conversationState.SaveChangesAsync(stepContext.Context);
+                await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
+                return await stepContext.ReplaceDialogAsync(nameof(WaterfallDialog), null, cancellationToken);
+            }
+            else if (choice != null && choice.Value.Equals("Si", StringComparison.OrdinalIgnoreCase) || userProfile.InsuranceInclude == true)
                 {
                     userProfile.InsuranceInclude = true;
+                    userProfile.InsuranceConsult = false;
                     await _conversationState.SaveChangesAsync(stepContext.Context);
                     stepContext.Context.Activity.Text = null;
                     return await stepContext.NextAsync();
-                }else if (choice.Value.Equals("No", StringComparison.OrdinalIgnoreCase))
+                }else if (choice != null && choice.Value.Equals("No", StringComparison.OrdinalIgnoreCase) || userProfile.InsuranceConsult == true)
                 {
                     stepContext.Context.Activity.Text = null;
                     userProfile.Aseguradora = null;
                     userProfile.PlanAseguradora = null;
+                    userProfile.InsuranceConsult = true;
                     await _conversationState.SaveChangesAsync(stepContext.Context);
                     await stepContext.Context.SendActivityAsync("¿Con que entidad de salud deseas solicitar la cita? (Ejemplo: Sura) Escribe atras si quieres cambiar tu informacion anterior.");
                     return new DialogTurnResult(DialogTurnStatus.Waiting);
-                }
-                else if (choice.Value.Equals("Atras", StringComparison.OrdinalIgnoreCase))
-                {
-                    stepContext.Context.Activity.Text = null;
-                    userProfile.Aseguradora = null;
-                    userProfile.PlanAseguradora = null;
-                    userProfile.DocumentId = null;
-                    userProfile.Name = null;
-                    await _conversationState.SaveChangesAsync(stepContext.Context);
-                    await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
-                    return await stepContext.ReplaceDialogAsync(nameof(WaterfallDialog), null, cancellationToken);
                 }
                 else
                 {
                     await stepContext.Context.SendActivityAsync("Opción seleccionada no válida.", cancellationToken: cancellationToken);
                     return await stepContext.EndDialogAsync();
                 }
-            }
-            else
-            {
-                await stepContext.Context.SendActivityAsync("Opción seleccionada no válida.", cancellationToken: cancellationToken);
-                return await stepContext.EndDialogAsync();
-            }
         }
 
         private async Task<DialogTurnResult> GetAseguradoraAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
@@ -388,10 +382,20 @@ namespace CoreBotTestDD.Dialogs
             }
             try
             {
-                List<JObject> aseguradoras = await _apiCalls.GetAseguradorasAsync(stepContext.Context.Activity.Text.ToString(), userProfile.CodeCompany);
+                List<JObject> aseguradoras;
+                if (userProfile.InsuranceName == null)
+                {
+                    userProfile.InsuranceName = stepContext.Context.Activity.Text.ToString();
+                    aseguradoras = await _apiCalls.GetAseguradorasAsync(stepContext.Context.Activity.Text.ToString(), userProfile.CodeCompany);
+                }
+                else
+                {
+                    aseguradoras = await _apiCalls.GetAseguradorasAsync(userProfile.InsuranceName, userProfile.CodeCompany);
+                }
                 if (aseguradoras == null || !aseguradoras.Any())
                 {
                     await stepContext.Context.SendActivityAsync("No se encontraron aseguradoras disponibles.", cancellationToken: cancellationToken);
+                    userProfile.InsuranceName = null;
                     return await stepContext.ReplaceDialogAsync(nameof(WaterfallDialog), null, cancellationToken);
                 }
                 else
@@ -443,6 +447,7 @@ namespace CoreBotTestDD.Dialogs
             {
                 if (choice.Value != null && choice.Value.Equals("Atras", StringComparison.OrdinalIgnoreCase))
                 {
+                    userProfile.InsuranceName = null;
                     stepContext.Context.Activity.Text = null;
                     await _conversationState.SaveChangesAsync(stepContext.Context);
                     await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
@@ -554,7 +559,6 @@ namespace CoreBotTestDD.Dialogs
 
         private async Task<DialogTurnResult> GetServiceNameAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
         {
-
             var userProfile = await _userStateAccessor.GetAsync(stepContext.Context, () => new UserProfileModel(), cancellationToken);
             var choice = stepContext.Result as FoundChoice;
             if (userProfile.Servicios != null)
@@ -782,7 +786,6 @@ namespace CoreBotTestDD.Dialogs
         private async Task<DialogTurnResult> GetEspecialidadAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
         {
             var dialogState = await _dialogStateAccessor.GetAsync(stepContext.Context, () => new DialogState(), cancellationToken);
-            stepContext.Values["DialogState"] = dialogState;
             var choice = (FoundChoice)stepContext.Result;
             var userProfile = await _userStateAccessor.GetAsync(stepContext.Context, () => new UserProfileModel(), cancellationToken);
             if (choice != null && choice.Value.Equals("Atras", StringComparison.OrdinalIgnoreCase))
@@ -880,7 +883,7 @@ namespace CoreBotTestDD.Dialogs
              };
             var promptOptions = new PromptOptions
             {
-                Prompt = MessageFactory.Text("Para continuar con el agendamiento de tu cita, por favor selecc de las siguientes opciones: "),
+                Prompt = MessageFactory.Text("Para continuar con el agendamiento de tu cita, por favor selecciona una de las siguientes opciones: "),
                 Choices = choices,
                 Style = ListStyle.List
             };
@@ -904,7 +907,7 @@ namespace CoreBotTestDD.Dialogs
             }
             catch (Exception e) { };
             var choice = stepContext.Result as FoundChoice;
-            if (stepContext.Values.ContainsKey("DataCita"))
+            if (userProfile.CitaDate != null)
             {
                 return await stepContext.NextAsync();
             }
@@ -1017,6 +1020,10 @@ namespace CoreBotTestDD.Dialogs
                 }
             }
             catch (Exception e) { };
+            if (userProfile.CitaDate != null)
+            {
+                return await stepContext.NextAsync();
+            }
             var choice = (FoundChoice)stepContext.Result;
             if (choice != null && choice.Value.Equals("Atras", StringComparison.OrdinalIgnoreCase))
             {
@@ -1050,7 +1057,7 @@ namespace CoreBotTestDD.Dialogs
             if (selectedOption != null)
             {
                 userProfile.CurrentPage = 0;
-                stepContext.Values["DataCita"] = selectedOption;
+                userProfile.CitaDate = selectedOption.DateTime;
                 return await stepContext.NextAsync();
             }
             else
@@ -1065,7 +1072,7 @@ namespace CoreBotTestDD.Dialogs
 
             var userProfile = await _userStateAccessor.GetAsync(stepContext.Context, () => new UserProfileModel(), cancellationToken);
             List<JObject> ScheduleAvailability = null;
-            ScheduleAvailability = await _apiCalls.GetScheduleAvailabilitySpecificAsync(userProfile, (string)stepContext.Values["DataCita"].GetType().GetProperty("DateTime").GetValue(stepContext.Values["DataCita"]));
+            ScheduleAvailability = await _apiCalls.GetScheduleAvailabilitySpecificAsync(userProfile);
             if (ScheduleAvailability == null || !ScheduleAvailability.Any())
             {
                 await stepContext.Context.SendActivityAsync("No se encontro agenda disponible. ", cancellationToken: cancellationToken);
@@ -1129,7 +1136,7 @@ namespace CoreBotTestDD.Dialogs
             var choice = (FoundChoice)stepContext.Result;
             if (choice != null && choice.Value.Equals("Atras", StringComparison.OrdinalIgnoreCase))
             {
-                stepContext.Values.Remove("DataCita");
+                userProfile.CitaDate = null;
                 stepContext.Context.Activity.Text = null;
                 await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
                 return await stepContext.ReplaceDialogAsync(nameof(WaterfallDialog), null, cancellationToken);
@@ -1169,10 +1176,10 @@ namespace CoreBotTestDD.Dialogs
             var userProfile = await _userStateAccessor.GetAsync(stepContext.Context, () => new UserProfileModel(), cancellationToken);
             try
             {
-                var options = stepContext.Values["DataCita"];
+                string citaInf = string.Concat(userProfile.CitaDate + " - " + stepContext.Values["DataCitaHour"].GetType().GetProperty("DateTime").GetValue(stepContext.Values["DataCitaHour"]));
                 var promptOptions = new PromptOptions
                 {
-                    Prompt = MessageFactory.Text("Confirmamos tu cita para el día: " + (string)options.GetType().GetProperty("DateTime").GetValue(options)),
+                    Prompt = MessageFactory.Text("Confirmamos tu cita para el día: " + citaInf),
                     Choices = new List<Choice>
                     {
                         new Choice { Value = "Si" },
@@ -1180,7 +1187,6 @@ namespace CoreBotTestDD.Dialogs
                     },
                     Style = ListStyle.List
                 };
-                var option = stepContext.Values["DataCita"];
                 await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
                 return await stepContext.PromptAsync(nameof(CustomChoicePrompt), promptOptions, cancellationToken);
 
@@ -1195,10 +1201,8 @@ namespace CoreBotTestDD.Dialogs
 
         private async Task<DialogTurnResult> HandleConfirmationCitaAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
         {
-            var options = (IEnumerable<dynamic>)stepContext.Values["ScheduleAvailability"];
             var userProfile = await _userStateAccessor.GetAsync(stepContext.Context, () => new UserProfileModel(), cancellationToken);
             var choice = (FoundChoice)stepContext.Result;
-            var selectedOption = options.FirstOrDefault(option => option.DateTime == choice.Value);
             if (choice != null && choice.Value.Equals("Atras", StringComparison.OrdinalIgnoreCase))
             {
                 stepContext.Values.Remove("DataCitaHour");
@@ -1208,7 +1212,7 @@ namespace CoreBotTestDD.Dialogs
             if (choice.Value.Equals("Si", StringComparison.OrdinalIgnoreCase))
             {
                 await stepContext.Context.SendActivityAsync("Agendando cita...");
-                string result = await _apiCalls.PostCreateCitaAsync(userProfile, stepContext.Values["DataCita"], stepContext.Values["DataCitaHour"]);
+                string result = await _apiCalls.PostCreateCitaAsync(userProfile, stepContext.Values["DataCitaHour"]);
                 await Task.Delay(3000);
                 if (result == "true")
                 {
@@ -1224,7 +1228,7 @@ namespace CoreBotTestDD.Dialogs
                             await stepContext.Context.SendActivityAsync(nameFormated);
                         }
                     }
-                    await stepContext.Context.SendActivityAsync("Informacion de tu cita:\n\n Fecha: "+ (string)stepContext.Values["DataCita"].GetType().GetProperty("DateTime").GetValue(stepContext.Values["DataCita"])+ "\n\n Doctor: "+ (string)stepContext.Values["DataCita"].GetType().GetProperty("DoctorName").GetValue(stepContext.Values["DataCita"]));
+                    await stepContext.Context.SendActivityAsync("Informacion de tu cita:\n\n Fecha: "+ userProfile.CitaDate+ "\n\n Doctor: "+ (string)stepContext.Values["DataCitaHour"].GetType().GetProperty("DoctorName").GetValue(stepContext.Values["DataCitaHour"]));
                     await ResetUserProfile(stepContext);
                     await stepContext.Context.SendActivityAsync("¿Te podemos ayudar en algo mas?");
                     return await stepContext.EndDialogAsync();
@@ -1321,6 +1325,8 @@ namespace CoreBotTestDD.Dialogs
             userProfile.IsNewUser = false;
             userProfile.TypeConsult = null;
             userProfile.ServiceName = null;
+            userProfile.AvailabilityChoiceMonth = 0;
+            userProfile.AvailabilityChoice = null;
 
             await _userStateAccessor.SetAsync(context.Context, userProfile, cancellationToken);
             await _userState.SaveChangesAsync(context.Context, false, cancellationToken);

@@ -9,6 +9,7 @@ using Microsoft.Bot.Builder.Integration.AspNet.Core;
 using Newtonsoft.Json;
 using System;
 using System.IO;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace CoreBotTestDD.Controllers
@@ -37,6 +38,7 @@ namespace CoreBotTestDD.Controllers
             {
                 // Delegate the processing of the HTTP POST to the adapter.
                 // The adapter will invoke the bot.
+                //string requestBody = await new StreamReader(Request.Body).ReadToEndAsync();
                 await _adapter.ProcessAsync(Request, Response, _bot);
             }
             catch (Exception ex)
@@ -45,7 +47,7 @@ namespace CoreBotTestDD.Controllers
                 Console.WriteLine($"Error processing request: {ex.Message}");
                 // Optionally, you can return a custom error message
                 Response.StatusCode = 500;
-                await Response.WriteAsync("Internal Server Error");
+                await Response.WriteAsync("Ocurrió un error interno en el servidor. Por favor, inténtelo de nuevo más tarde");
             }
         }
     }

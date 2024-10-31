@@ -94,7 +94,7 @@ namespace DonBot.Dialogs
         private async Task<DialogTurnResult> HandleScheduleAvalibilityByMonthConsultAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
         {
             var userProfile = await _userStateAccessor.GetAsync(stepContext.Context, () => new UserProfileModel(), cancellationToken);
-            if (stepContext.Values.ContainsKey("DataCita"))
+            if (userProfile.CitaDate != null)
             {
                 return await stepContext.NextAsync();
             }
@@ -215,7 +215,7 @@ namespace DonBot.Dialogs
                     await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
                     return await stepContext.ReplaceDialogAsync(nameof(WaterfallDialog), null, cancellationToken);
                 }
-                stepContext.Values["DataCita"] = selectedOption;
+                userProfile.CitaDate = selectedOption.DateTime;
                 userProfile.AvailabilityChoice = choice.Value;
                 await _userStateAccessor.SetAsync(stepContext.Context, userProfile, cancellationToken);
                 await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
@@ -234,7 +234,7 @@ namespace DonBot.Dialogs
 
             var userProfile = await _userStateAccessor.GetAsync(stepContext.Context, () => new UserProfileModel(), cancellationToken);
             List<JObject> ScheduleAvailability = null;
-            ScheduleAvailability = await _apiCalls.GetScheduleAvailabilitySpecificAsync(userProfile, (string)stepContext.Values["DataCita"].GetType().GetProperty("DateTime").GetValue(stepContext.Values["DataCita"]));
+            ScheduleAvailability = await _apiCalls.GetScheduleAvailabilitySpecificAsync(userProfile);
             if (ScheduleAvailability == null || !ScheduleAvailability.Any())
             {
                 await stepContext.Context.SendActivityAsync("No se encontro agenda disponible. ", cancellationToken: cancellationToken);
@@ -288,7 +288,7 @@ namespace DonBot.Dialogs
             var choice = (FoundChoice)stepContext.Result;
             if (choice != null && choice.Value.Equals("Atras", StringComparison.OrdinalIgnoreCase))
             {
-                stepContext.Values.Remove("DataCita");
+                userProfile.CitaDate = null;
                 stepContext.Context.Activity.Text = null;
                 await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
                 return await stepContext.ReplaceDialogAsync(nameof(WaterfallDialog), null, cancellationToken);
@@ -366,7 +366,7 @@ namespace DonBot.Dialogs
             if (choice.Value.Equals("Si", StringComparison.OrdinalIgnoreCase))
             {
                 await stepContext.Context.SendActivityAsync("Agendando cita...");
-                string result = await _apiCalls.PostCreateCitaAsync(userProfile, stepContext.Values["DataCita"], stepContext.Values["DataCitaHour"]);
+                string result = await _apiCalls.PostCreateCitaAsync(userProfile, stepContext.Values["DataCitaHour"]);
                 await Task.Delay(3000);
                 if (result == "true")
                 {

@@ -51,7 +51,10 @@ namespace DonBot.Dialogs
                 HandleServiceSelectionByDoctorAsync,
                 GetEspecialidadAsync,
                 GetScheduleAvailabilityAsync,
+                GetHandleAvailabilityChoiceAsync,
                 HandleScheduleAvailabilityAsync,
+                GetHandleAvailabilityHourChoiceAsync,
+                HandleScheduleAvailabilitySpecificAsync,
                 GetConfirmationAsync,
                 HandleConfirmationCitaAsync
             };
@@ -214,7 +217,7 @@ namespace DonBot.Dialogs
             }
             try
             {
-                List<JObject> Servicios = await _apiCalls.GetServicesByDoctorAsync(userProfile.DoctorId, userProfile.CodeCompany);
+                List<JObject> Servicios = await _apiCalls.GetServicesByDoctorAsync(userProfile.DoctorId, userProfile.CodeCompany, userProfile.PlanAseguradora);
                 if (Servicios == null || !Servicios.Any())
                 {
                     await stepContext.Context.SendActivityAsync("Actualmente el profesional no cuenta con servicios para auto agendamiento, te invitamos a comunicarte con los numeros de atencion de la institucion.", cancellationToken: cancellationToken);
@@ -375,6 +378,7 @@ namespace DonBot.Dialogs
                 if (especialidades == null || !especialidades.Any())
                 {
                     await stepContext.Context.SendActivityAsync("No se encontraron especialidades disponibles.", cancellationToken: cancellationToken);
+                    userProfile.Servicios = null;
                     return await stepContext.ReplaceDialogAsync(nameof(WaterfallDialog), null, cancellationToken);
                 }
                 else
@@ -420,6 +424,10 @@ namespace DonBot.Dialogs
         private async Task<DialogTurnResult> GetScheduleAvailabilityAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
         {
             var userProfile = await _userStateAccessor.GetAsync(stepContext.Context, () => new UserProfileModel(), cancellationToken);
+            if (userProfile.AvailabilityChoiceMonth != 0)
+            {
+                return await stepContext.NextAsync();
+            }
             if (userProfile.especialidad == null)
             {
                 var optionsAnt = (IEnumerable<dynamic>)stepContext.Values["Especialidades"];
@@ -436,67 +444,44 @@ namespace DonBot.Dialogs
                 stepContext.Values["DialogState"] = dialogState;
                 userProfile.especialidad = selectedOption.Id;
             }
-            try
+            var choices = new List<Choice>
+             {
+                   new Choice { Value = "Ver la cita más cercana disponible." },
+                    new Choice { Value = "Ver citas disponibles en la próxima semana." },
+                 new Choice { Value = "Ver citas disponibles dentro del próximo mes." },
+                 new Choice { Value = "Seleccionar un mes en especifico" },
+                 new Choice { Value = "Atras" }
+             };
+            var promptOptions = new PromptOptions
             {
-                List<JObject> ScheduleAvailability = await _apiCalls.GetScheduleAvailabilityByDoctorAsync(userProfile);
-                if (ScheduleAvailability == null || !ScheduleAvailability.Any())
-                {
-                    await stepContext.Context.SendActivityAsync("No se encontro agenda disponible. ", cancellationToken: cancellationToken);
-                    await stepContext.Context.SendActivityAsync("¿Puedo ayudarte en algo mas🤓?", cancellationToken: cancellationToken);
-                    await ResetUserProfile(stepContext);
-                    var cancellationReason = new { Reason = DialogReason.CancelCalled };
-                    await stepContext.CancelAllDialogsAsync(cancellationToken);
-                    return await stepContext.EndDialogAsync(cancellationReason, cancellationToken);
-                }
-                else
-                {
-                    var options = ScheduleAvailability.Select(documentType => new
-                    {
-                        DateTime = documentType.GetValue("dateTime").ToString(),
-                        UserId = documentType.GetValue("userID").ToString(),
-                        AppointmentTypeId = documentType.GetValue("appointmentTypeID").ToString(),
-                        Duration = documentType.GetValue("duration").ToString(),
-                        OfficeId = documentType.GetValue("officeID").ToString(),
-                        DoctorName = documentType.GetValue("doctorName").ToString()
-                    }).Take(5).ToArray();
-                    var optionsWithBack = options.Concat(new[]
-                    {
-                     new
-                     {
-                         DateTime = "Atras",
-                            UserId = string.Empty,
-                            AppointmentTypeId = string.Empty,
-                         Duration = string.Empty,
-                         OfficeId = string.Empty,
-                         DoctorName = string.Empty
-                      }
-                    }).ToArray();
-
-                    var promptOptions = new PromptOptions
-                    {
-                        Prompt = MessageFactory.Text("Selecciona una fecha para tu cita: " + Environment.NewLine),
-                        Choices = ChoiceFactory.ToChoices(optionsWithBack.Select(option => option.DateTime).ToList()),
-                        Style = ListStyle.List
-                    };
-
-                    stepContext.Values["ScheduleAvailability"] = options;
-                    await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
-                    return await stepContext.PromptAsync(nameof(CustomChoicePrompt), promptOptions, cancellationToken);
-                }
-
-            }
-            catch (Exception ex)
-            {
-                await stepContext.Context.SendActivityAsync("Error en la consulta");
-                return await stepContext.EndDialogAsync();
-            }
-
+                Prompt = MessageFactory.Text("Para continuar con el agendamiento de tu cita, por favor selecciona una de las siguientes opciones: "),
+                Choices = choices,
+                Style = ListStyle.List
+            };
+            stepContext.Values["Choice"] = choices;
+            await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
+            return await stepContext.PromptAsync(nameof(CustomChoicePrompt), promptOptions, cancellationToken);
         }
 
-        private async Task<DialogTurnResult> HandleScheduleAvailabilityAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
+        private async Task<DialogTurnResult> GetHandleAvailabilityChoiceAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
         {
+
             var userProfile = await _userStateAccessor.GetAsync(stepContext.Context, () => new UserProfileModel(), cancellationToken);
-            var choice = (FoundChoice)stepContext.Result;
+            var cancellationReasonInit = stepContext.Result as dynamic;
+            try
+            {
+                if (cancellationReasonInit.Reason != null && cancellationReasonInit.Reason == DialogReason.CancelCalled)
+                {
+                    await ResetUserProfile(stepContext, cancellationToken);
+                    return await stepContext.EndDialogAsync();
+                }
+            }
+            catch (Exception e) { };
+            var choice = stepContext.Result as FoundChoice;
+            if (userProfile.CitaDate != null)
+            {
+                return await stepContext.NextAsync();
+            }
             if (choice != null && choice.Value.Equals("Atras", StringComparison.OrdinalIgnoreCase))
             {
                 List<JObject> especialidades = await _apiCalls.GetEspecialidadAsync(userProfile.Servicios, userProfile.CodeCompany);
@@ -509,12 +494,247 @@ namespace DonBot.Dialogs
                 await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
                 return await stepContext.ReplaceDialogAsync(nameof(WaterfallDialog), null, cancellationToken);
             }
+
+            List<JObject> ScheduleAvailability = null;
+            if (choice != null)
+            {
+                switch (choice.Value)
+                {
+                    case "Ver citas disponibles en la próxima semana.":
+                        userProfile.AvailabilityChoiceMonth = 2;
+                        ScheduleAvailability = await _apiCalls.GetScheduleAvailabilityAsync(userProfile, "2");
+                        break;
+                    case "Ver citas disponibles dentro del próximo mes.":
+                        userProfile.AvailabilityChoiceMonth = 3;
+                        ScheduleAvailability = await _apiCalls.GetScheduleAvailabilityAsync(userProfile, "3");
+                        break;
+                    case "Ver la cita más cercana disponible.":
+                        userProfile.AvailabilityChoiceMonth = 1;
+                        ScheduleAvailability = await _apiCalls.GetScheduleAvailabilityAsync(userProfile, "1");
+                        break;
+                    case "Seleccionar un mes en especifico":
+                        return await stepContext.BeginDialogAsync(nameof(ScheduleAvalaibilityByMonth), null, cancellationToken);
+                };
+            }
+            else
+            {
+                ScheduleAvailability = await _apiCalls.GetScheduleAvailabilityAsync(userProfile, userProfile.AvailabilityChoiceMonth.ToString());
+            }
+            if (ScheduleAvailability == null || !ScheduleAvailability.Any())
+            {
+                await stepContext.Context.SendActivityAsync("No se encontro agenda disponible. ", cancellationToken: cancellationToken);
+                stepContext.Context.Activity.Text = null;
+                await _conversationState.SaveChangesAsync(stepContext.Context);
+                return await stepContext.BeginDialogAsync(nameof(ListaEsperaDialog), null, cancellationToken);
+            }
+            else
+            {
+                int currentPage = userProfile.CurrentPage;
+                int itemsPerPage = 6;
+                var paginatedSchedule = ScheduleAvailability.Skip(currentPage * itemsPerPage).Take(itemsPerPage).ToList();
+                var options = paginatedSchedule.Select(documentType => new
+                {
+                    DateTime = documentType.GetValue("dateTime").ToString(),
+                    UserId = documentType.GetValue("userID").ToString(),
+                    AppointmentTypeId = documentType.GetValue("appointmentTypeID").ToString(),
+                    Duration = documentType.GetValue("duration").ToString(),
+                    OfficeId = documentType.GetValue("officeID").ToString(),
+                    DoctorName = documentType.GetValue("doctorName").ToString()
+                }).ToArray();
+                var optionsList = options.ToList();
+                if (ScheduleAvailability.Count > (currentPage + 1) * itemsPerPage)
+                {
+                    var nextPageOption = new { DateTime = "Siguiente Página", UserId = "Siguiente Página", AppointmentTypeId = "", Duration = "", OfficeId = "", DoctorName = "" };
+                    optionsList.Add(nextPageOption);
+                }
+                if (currentPage > 0)
+                {
+                    var previousPageOption = new { DateTime = "Pagina Anterior", UserId = "Página Anterior", AppointmentTypeId = "", Duration = "", OfficeId = "", DoctorName = "" };
+                    optionsList.Add(previousPageOption);
+                }
+                var backOption = new { DateTime = "Atras", UserId = "Atras", AppointmentTypeId = "", Duration = "", OfficeId = "", DoctorName = "" };
+                optionsList.Add(backOption);
+
+                var promptOptions = new PromptOptions
+                {
+                    Prompt = MessageFactory.Text("Selecciona una fecha para tu cita: " + Environment.NewLine),
+                    Choices = ChoiceFactory.ToChoices(optionsList.Select(option => option.DateTime).ToList()),
+                    Style = ListStyle.List
+                };
+                stepContext.Values["ScheduleAvailability"] = options;
+                await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
+                return await stepContext.PromptAsync(nameof(CustomChoicePrompt), promptOptions, cancellationToken);
+            }
+        }
+
+        private async Task<DialogTurnResult> HandleScheduleAvailabilityAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
+        {
+            var userProfile = await _userStateAccessor.GetAsync(stepContext.Context, () => new UserProfileModel(), cancellationToken);
+            var cancellationReason = stepContext.Result as dynamic;
+            try
+            {
+                if (cancellationReason.Reason != null && cancellationReason.Reason == DialogReason.CancelCalled)
+                {
+                    await ResetUserProfile(stepContext, cancellationToken);
+                    var cancellationReasonReturn = new { Reason = DialogReason.CancelCalled };
+                    await stepContext.CancelAllDialogsAsync(cancellationToken);
+                    return await stepContext.EndDialogAsync(cancellationReasonReturn, cancellationToken);
+                }
+                else if (cancellationReason.Reason != null && cancellationReason.Reason == DialogReason.ReplaceCalled)
+                {
+                    List<JObject> especialidades = await _apiCalls.GetEspecialidadAsync(userProfile.Servicios, userProfile.CodeCompany);
+                    if (especialidades.Count == 1)
+                    {
+                        userProfile.Servicios = null;
+                    }
+                    userProfile.AvailabilityChoiceMonth = 0;
+                    stepContext.Context.Activity.Text = null;
+                    await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
+                    return await stepContext.ReplaceDialogAsync(nameof(WaterfallDialog), null, cancellationToken);
+                }
+            }
+            catch (Exception e) { };
+            if (userProfile.CitaDate != null)
+            {
+                return await stepContext.NextAsync();
+            }
+            var choice = (FoundChoice)stepContext.Result;
+            if (choice != null && choice.Value.Equals("Atras", StringComparison.OrdinalIgnoreCase))
+            {
+                List<JObject> especialidades = await _apiCalls.GetEspecialidadAsync(userProfile.Servicios, userProfile.CodeCompany);
+                if (especialidades.Count == 1)
+                {
+                    userProfile.Servicios = null;
+                }
+                userProfile.AvailabilityChoiceMonth = 0;
+                stepContext.Context.Activity.Text = null;
+                await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
+                return await stepContext.ReplaceDialogAsync(nameof(WaterfallDialog), null, cancellationToken);
+            }
+            else if (choice.Value.Equals("Siguiente Página", StringComparison.OrdinalIgnoreCase))
+            {
+                userProfile.CurrentPage++;
+                await _userStateAccessor.SetAsync(stepContext.Context, userProfile, cancellationToken);
+                await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
+                return await stepContext.ReplaceDialogAsync(nameof(WaterfallDialog), null, cancellationToken);
+            }
+            else if (choice.Value.Equals("Pagina Anterior", StringComparison.OrdinalIgnoreCase))
+            {
+                userProfile.CurrentPage--;
+                await _userStateAccessor.SetAsync(stepContext.Context, userProfile, cancellationToken);
+                await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
+                return await stepContext.ReplaceDialogAsync(nameof(WaterfallDialog), null, cancellationToken);
+            }
             var options = (IEnumerable<dynamic>)stepContext.Values["ScheduleAvailability"];
             var selectedOption = options.FirstOrDefault(option => option.DateTime == choice.Value);
 
             if (selectedOption != null)
             {
-                stepContext.Values["DataCita"] = selectedOption;
+                userProfile.CurrentPage = 0;
+                userProfile.CitaDate = selectedOption.DateTime;
+                return await stepContext.NextAsync();
+            }
+            else
+            {
+                await stepContext.Context.SendActivityAsync("Opción seleccionada no válida.", cancellationToken: cancellationToken);
+                return await stepContext.EndDialogAsync();
+            }
+        }
+
+        private async Task<DialogTurnResult> GetHandleAvailabilityHourChoiceAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
+        {
+
+            var userProfile = await _userStateAccessor.GetAsync(stepContext.Context, () => new UserProfileModel(), cancellationToken);
+            List<JObject> ScheduleAvailability = null;
+            ScheduleAvailability = await _apiCalls.GetScheduleAvailabilitySpecificAsync(userProfile);
+            if (ScheduleAvailability == null || !ScheduleAvailability.Any())
+            {
+                await stepContext.Context.SendActivityAsync("No se encontro agenda disponible. ", cancellationToken: cancellationToken);
+                stepContext.Context.Activity.Text = null;
+                await _conversationState.SaveChangesAsync(stepContext.Context);
+                return await stepContext.BeginDialogAsync(nameof(ListaEsperaDialog), null, cancellationToken);
+            }
+            else
+            {
+                int currentPage = userProfile.CurrentPage;
+                int itemsPerPage = 6;
+                var paginatedSchedule = ScheduleAvailability.Skip(currentPage * itemsPerPage).Take(itemsPerPage).ToList();
+                var options = paginatedSchedule.Select(documentType => new
+                {
+                    DateTime = documentType.GetValue("dateTime").ToString(),
+                    UserId = documentType.GetValue("userID").ToString(),
+                    AppointmentTypeId = documentType.GetValue("appointmentTypeID").ToString(),
+                    Duration = documentType.GetValue("duration").ToString(),
+                    OfficeId = documentType.GetValue("officeID").ToString(),
+                    DoctorName = documentType.GetValue("doctorName").ToString()
+                }).ToArray();
+                var optionsList = options.ToList();
+                if (ScheduleAvailability.Count > (currentPage + 1) * itemsPerPage)
+                {
+                    var nextPageOption = new { DateTime = "Siguiente Página", UserId = "Siguiente Página", AppointmentTypeId = "", Duration = "", OfficeId = "", DoctorName = "" };
+                    optionsList.Add(nextPageOption);
+                }
+                if (currentPage > 0)
+                {
+                    var previousPageOption = new { DateTime = "Pagina Anterior", UserId = "Página Anterior", AppointmentTypeId = "", Duration = "", OfficeId = "", DoctorName = "" };
+                    optionsList.Add(previousPageOption);
+                }
+                var backOption = new { DateTime = "Atras", UserId = "Atras", AppointmentTypeId = "", Duration = "", OfficeId = "", DoctorName = "" };
+                optionsList.Add(backOption);
+
+                var promptOptions = new PromptOptions
+                {
+                    Prompt = MessageFactory.Text("Selecciona una hora para tu cita: " + Environment.NewLine),
+                    Choices = ChoiceFactory.ToChoices(optionsList.Select(option => option.DateTime).ToList()),
+                    Style = ListStyle.List
+                };
+                stepContext.Values["ScheduleAvailability"] = options;
+                await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
+                return await stepContext.PromptAsync(nameof(CustomChoicePrompt), promptOptions, cancellationToken);
+            }
+        }
+
+        private async Task<DialogTurnResult> HandleScheduleAvailabilitySpecificAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
+        {
+            var userProfile = await _userStateAccessor.GetAsync(stepContext.Context, () => new UserProfileModel(), cancellationToken);
+            var cancellationReason = stepContext.Result as dynamic;
+            try
+            {
+                if (cancellationReason.Reason != null && cancellationReason.Reason == DialogReason.CancelCalled)
+                {
+                    await ResetUserProfile(stepContext, cancellationToken);
+                    return await stepContext.EndDialogAsync();
+                }
+            }
+            catch (Exception e) { };
+            var choice = (FoundChoice)stepContext.Result;
+            if (choice != null && choice.Value.Equals("Atras", StringComparison.OrdinalIgnoreCase))
+            {
+                userProfile.CitaDate = null;
+                stepContext.Context.Activity.Text = null;
+                await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
+                return await stepContext.ReplaceDialogAsync(nameof(WaterfallDialog), null, cancellationToken);
+            }
+            else if (choice.Value.Equals("Siguiente Página", StringComparison.OrdinalIgnoreCase))
+            {
+                userProfile.CurrentPage++;
+                await _userStateAccessor.SetAsync(stepContext.Context, userProfile, cancellationToken);
+                await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
+                return await stepContext.ReplaceDialogAsync(nameof(WaterfallDialog), null, cancellationToken);
+            }
+            else if (choice.Value.Equals("Pagina Anterior", StringComparison.OrdinalIgnoreCase))
+            {
+                userProfile.CurrentPage--;
+                await _userStateAccessor.SetAsync(stepContext.Context, userProfile, cancellationToken);
+                await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
+                return await stepContext.ReplaceDialogAsync(nameof(WaterfallDialog), null, cancellationToken);
+            }
+            var options = (IEnumerable<dynamic>)stepContext.Values["ScheduleAvailability"];
+            var selectedOption = options.FirstOrDefault(option => option.DateTime == choice.Value);
+
+            if (selectedOption != null)
+            {
+                stepContext.Values["DataCitaHour"] = selectedOption;
                 return await stepContext.NextAsync();
             }
             else
@@ -530,10 +750,10 @@ namespace DonBot.Dialogs
             var userProfile = await _userStateAccessor.GetAsync(stepContext.Context, () => new UserProfileModel(), cancellationToken);
             try
             {
-                var options = stepContext.Values["DataCita"];
+                string citaInf = string.Concat(userProfile.CitaDate + " - " + stepContext.Values["DataCitaHour"].GetType().GetProperty("DateTime").GetValue(stepContext.Values["DataCitaHour"]));
                 var promptOptions = new PromptOptions
                 {
-                    Prompt = MessageFactory.Text("Confirmamos tu cita para el día: " + (string)options.GetType().GetProperty("DateTime").GetValue(options)),
+                    Prompt = MessageFactory.Text("Confirmamos tu cita para el día: " + citaInf),
                     Choices = new List<Choice>
                     {
                         new Choice { Value = "Si" },
@@ -541,7 +761,6 @@ namespace DonBot.Dialogs
                     },
                     Style = ListStyle.List
                 };
-                var option = stepContext.Values["DataCita"];
                 await _userState.SaveChangesAsync(stepContext.Context, false, cancellationToken);
                 return await stepContext.PromptAsync(nameof(CustomChoicePrompt), promptOptions, cancellationToken);
 
@@ -562,12 +781,14 @@ namespace DonBot.Dialogs
             var selectedOption = options.FirstOrDefault(option => option.DateTime == choice.Value);
             if (choice != null && choice.Value.Equals("Atras", StringComparison.OrdinalIgnoreCase))
             {
+                stepContext.Values.Remove("DataCitaHour");
+                userProfile.AvailabilityChoice = null;
                 return await stepContext.ReplaceDialogAsync(nameof(WaterfallDialog), null, cancellationToken);
             }
             if (choice.Value.Equals("Si", StringComparison.OrdinalIgnoreCase))
             {
                 await stepContext.Context.SendActivityAsync("Agendando cita...");
-                string result = await _apiCalls.PostCreateCitaAsync(userProfile, stepContext.Values["DataCita"], stepContext.Values["DataCita"]);
+                string result = await _apiCalls.PostCreateCitaAsync(userProfile, stepContext.Values["DataCitaHour"]);
                 await Task.Delay(3000);
                 if (result == "true")
                 {
@@ -669,6 +890,7 @@ namespace DonBot.Dialogs
             userProfile.DoctorId = null;
             userProfile.DoctorName = null;
             userProfile.TypeConsult = null;
+            userProfile.CurrentPage = 0;
 
             await _userStateAccessor.SetAsync(context.Context, userProfile, cancellationToken);
             await _userState.SaveChangesAsync(context.Context, false, cancellationToken);

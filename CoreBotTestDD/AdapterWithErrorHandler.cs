@@ -73,24 +73,22 @@ namespace CoreBotTestDD
                     var botResponse = activity.Text; // El texto que el bot está enviando al usuario
                     var recipientId = activity.Recipient.Id;
                     var conversationId = activity.Conversation.Id;
-
                     // Aquí puedes enviar el mensaje a Kustomer
-                    await SendMessageToKustomer(botResponse, recipientId, conversationId);
+                    await SendMessageToOrchestator(botResponse, recipientId, conversationId);
                 }
             }
-
             // Continuar con el procesamiento normal
             return await base.SendActivitiesAsync(turnContext, activities, cancellationToken);
         }
 
-        private async Task SendMessageToKustomer(string message, string to, string conversationId)
+        private async Task SendMessageToOrchestator(string message, string to, string conversationId)
         {
             var httpClient = _httpClientFactory.CreateClient();
             var url = "https://your-kustomer-instance.com/api/v1/messages";
 
             var content = new StringContent(JsonConvert.SerializeObject(new
             {
-                from = "Bot",
+                Id = "Bot",
                 to = to,
                 body = message,
                 conversation = conversationId

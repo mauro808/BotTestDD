@@ -20,7 +20,11 @@ namespace CoreBotTestDD.Models
 
         public string CodeCompany { get; set; }
 
-        public bool InsuranceInclude { get; set; } 
+        public bool InsuranceInclude { get; set; }
+
+        public bool InsuranceConsult { get; set; }
+
+        public string InsuranceName { get; set; }
 
         public bool Choice { get; set; }
 

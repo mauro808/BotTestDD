@@ -221,7 +221,14 @@ namespace CoreBotTestDD.Services
                                 string key = firstExtraInfo["key"]?.ToString();
 
                                 // Imprimir la clave
-                                responseModel.intent = key;
+                                if(key != null)
+                                {
+                                    responseModel.intent = key;
+                                }
+                                else
+                                {
+                                    responseModel.intent = text;
+                                }
                                 return responseModel;
 
                             }
@@ -233,7 +240,8 @@ namespace CoreBotTestDD.Services
                         }
                         else
                         {
-                            return null;
+                            responseModel.intent = text;
+                            return responseModel;
                         }
                     }
                     else
